@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Custom Route Mapper</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #login-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: black;
+      color: white;
+    }
+    #app { display: none; height: 100vh; }
+    #app.active { display: flex; }
+    #sidebar {
+      width: 250px;
+      background: #222;
+      color: white;
+      padding: 1em;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    #route-list { list-style: none; padding: 0; }
+    #route-list li {
+      background: #333;
+      margin-bottom: 6px;
+      padding: 8px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    #route-list li:hover { background: #444; }
+    #add-route-btn {
+      background: crimson;
+      border: none;
+      color: white;
+      padding: 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    #map { flex: 1; }
+  </style>
+</head>
+<body>
+  <div id="login-screen">
+    <h2>Enter Access Code</h2>
+    <input type="password" id="password-input" placeholder="Password" />
+    <button id="login-btn">Enter</button>
+    <p id="login-error"></p>
+  </div>
+
+  <div id="app">
+    <div id="sidebar">
+      <h2>My Routes</h2>
+      <ul id="route-list"></ul>
+      <button id="add-route-btn">+ New Route</button>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+  <script>
+    const correctPassword = "Snowcap123"; // Updated password
+
+    document.getElementById("login-btn").addEventListener("click", () => {
+      const input = document.getElementById("password-input").value;
+      const error = document.getElementById("login-error");
+
+      if (input === correctPassword) {
+        document.getElementById("login-screen").style.display = "none";
+        document.getElementById("app").classList.add("active");
+      } else {
+        error.textContent = "Incorrect password. Try again.";
+        error.style.color = "red";
+      }
+    });
+
+    const map = L.map('map').setView([30.2672, -97.7431], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let currentRoute = null;
+    let routes = JSON.parse(localStorage.getItem("routes") || "[]");
+    let routeMarkers = [];
+    let routeControl = null;
+
+    const routeList = document.getElementById("route-list");
+    const addBtn = document.getElementById("add-route-btn");
+
+    function refreshSidebar() {
+      routeList.innerHTML = "";
+      routes.forEach((r, i) => {
+        const li = document.createElement("li");
+        li.textContent = r.name;
+        li.onclick = () => loadRoute(i);
+        routeList.appendChild(li);
+      });
+    }
+
+    addBtn.onclick = () => {
+      const name = prompt("Enter new route name:");
+      if (!name) return;
+      const newRoute = { name, stops: [] };
+      routes.push(newRoute);
+      localStorage.setItem("routes", JSON.stringify(routes));
+      refreshSidebar();
+    };
+
+    function loadRoute(index) {
+      currentRoute = routes[index];
+      map.eachLayer(l => { if (l instanceof L.Marker) map.removeLayer(l); });
+      routeMarkers = [];
+
+      currentRoute.stops.forEach(([lat, lng]) => {
+        const marker = L.marker([lat, lng]).addTo(map);
+        routeMarkers.push(marker);
+      });
+      updateRouteLine();
+      alert("Loaded route: " + currentRoute.name);
+    }
+
+    function updateRouteLine() {
+      if (routeMarkers.length < 2) return;
+      const waypoints = routeMarkers.map(m => m.getLatLng());
+      if (routeControl) map.removeControl(routeControl);
+
+      routeControl = L.Routing.control({
+        waypoints: waypoints,
+        routeWhileDragging: true,
+        show: false
+      }).addTo(map);
+    }
+
+    map.on('click', function(e) {
+      if (!currentRoute) {
+        alert("Select or create a route first!");
+        return;
+      }
+
+      const marker = L.marker(e.latlng).addTo(map);
+      routeMarkers.push(marker);
+      currentRoute.stops.push([e.latlng.lat, e.latlng.lng]);
+      localStorage.setItem("routes", JSON.stringify(routes));
+      updateRouteLine();
+    });
+
+    function distanceFromRoute(lat, lng) {
+      if (!routeControl) return 'No route yet.';
+      const route = routeControl.getPlan()._waypoints.map(w => [w.latLng.lng, w.latLng.lat]);
+      const point = [lng, lat];
+      const line = turf.lineString(route);
+      const pt = turf.point(point);
+      const dist = turf.pointToLineDistance(pt, line, { units: 'kilometers' });
+      return dist.toFixed(2) + ' km';
+    }
+
+    refreshSidebar();
+  </script>
+</body>
+</html>
