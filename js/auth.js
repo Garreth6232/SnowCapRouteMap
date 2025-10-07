@@ -1,86 +1,96 @@
 (function () {
   const LOCK_ID = "lock";
   const APP_ID = "app";
+  const FORM_ID = "lock-form";
+  const PASSWORD_ID = "lock-password";
+  const ERROR_ID = "lock-error";
+  const UNLOCK_KEY = "scrm-unlocked";
+  const TRANSITION_DELAY = 320;
 
-  function getElements() {
+  function elements() {
     return {
       lock: document.getElementById(LOCK_ID),
       app: document.getElementById(APP_ID),
-      form: document.getElementById("lock-form"),
-      passwordInput: document.getElementById("lock-password"),
-      error: document.getElementById("lock-error"),
+      form: document.getElementById(FORM_ID),
+      password: document.getElementById(PASSWORD_ID),
+      error: document.getElementById(ERROR_ID)
     };
   }
 
-  function revealApp(elements, shouldDispatch = true) {
-    const { lock, app } = elements;
+  function showError(el, message) {
+    if (!el) return;
+    el.textContent = message;
+  }
+
+  function clearError(el) {
+    if (!el) return;
+    el.textContent = "";
+  }
+
+  function toggleAppVisibility(lock, app, unlocked) {
     if (!lock || !app) return;
 
-    lock.classList.add("is-hidden");
-    app.classList.add("is-active");
-    app.setAttribute("aria-hidden", "false");
-
-    if (shouldDispatch) {
-      document.dispatchEvent(new CustomEvent("app:unlock"));
+    if (unlocked) {
+      lock.classList.add("is-hidden");
+      app.classList.add("is-active");
+      app.setAttribute("aria-hidden", "false");
+    } else {
+      lock.classList.remove("is-hidden");
+      app.classList.remove("is-active");
+      app.setAttribute("aria-hidden", "true");
     }
   }
 
-  function handleSubmit(event, elements) {
-    event.preventDefault();
-    const { passwordInput, error } = elements;
-    if (!passwordInput) return;
-
-    const value = passwordInput.value.trim();
-    if (!value) {
-      if (error) error.textContent = "Password is required.";
-      passwordInput.focus();
-      return;
-    }
-
-    if (typeof PUBLIC_PASSWORD !== "string") {
-      if (error) error.textContent = "Password is not configured.";
-      return;
-    }
-
-    if (value !== PUBLIC_PASSWORD) {
-      if (error) error.textContent = "Incorrect password. Try again.";
-      passwordInput.select();
-      return;
-    }
-
-    sessionStorage.setItem("unlocked", "1");
-    if (error) error.textContent = "";
-    revealApp(elements);
+  function handleUnlock(elementsMap) {
+    const { lock, app } = elementsMap;
+    toggleAppVisibility(lock, app, true);
+    window.setTimeout(() => {
+      document.dispatchEvent(new CustomEvent("auth:granted"));
+    }, TRANSITION_DELAY);
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    const elements = getElements();
-    const { lock, app, form, passwordInput, error } = elements;
+    const els = elements();
+    const { form, password, error, lock, app } = els;
 
-    if (!lock || !app || !form || !passwordInput) {
-      console.warn("Lock screen elements are missing.");
+    if (!form || !password || !lock || !app) {
+      console.warn("Lock screen elements missing. Initialization skipped.");
       return;
     }
 
-    const alreadyUnlocked = sessionStorage.getItem("unlocked") === "1";
+    const previouslyUnlocked = sessionStorage.getItem(UNLOCK_KEY) === "1";
 
-    if (alreadyUnlocked) {
-      revealApp(elements);
-      return;
+    if (previouslyUnlocked) {
+      toggleAppVisibility(lock, app, true);
+      document.dispatchEvent(new CustomEvent("auth:granted", { detail: { restored: true } }));
+    } else {
+      toggleAppVisibility(lock, app, false);
     }
 
-    app.classList.remove("is-active");
-    app.setAttribute("aria-hidden", "true");
-    lock.classList.remove("is-hidden");
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (!password.value.trim()) {
+        showError(error, "Enter the access code.");
+        password.focus();
+        return;
+      }
 
-    form.addEventListener("submit", (event) => handleSubmit(event, elements));
+      if (typeof PUBLIC_PASSWORD !== "string" || !PUBLIC_PASSWORD) {
+        showError(error, "Access code is not configured.");
+        return;
+      }
 
-    passwordInput.addEventListener("input", () => {
-      if (error) error.textContent = "";
+      if (password.value.trim() !== PUBLIC_PASSWORD) {
+        showError(error, "Incorrect code. Try again.");
+        password.select();
+        return;
+      }
+
+      clearError(error);
+      sessionStorage.setItem(UNLOCK_KEY, "1");
+      handleUnlock(els);
     });
 
-    setTimeout(() => {
-      passwordInput.focus();
-    }, 200);
+    password.addEventListener("input", () => clearError(error));
   });
 })();

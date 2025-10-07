@@ -1,96 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SnowCap Route Mapper</title>
-  <link rel="stylesheet" href="./css/styles.css" />
-</head>
-<body>
-  <noscript>
-    <div class="noscript">This application requires JavaScript to run. Please enable JavaScript in your browser.</div>
-  </noscript>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SnowCap Route Mapper</title>
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <noscript>
+      <div class="noscript">This application requires JavaScript to run. Please enable JavaScript in your browser.</div>
+    </noscript>
 
-  <div id="lock" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lock-title" aria-describedby="lock-subtitle">
-    <div class="lock-card">
-      <img src="./assets/logo-main.svg" alt="SnowCap main logo" class="lock-card__logo" />
-      <h1 id="lock-title">SnowCap Route Mapper</h1>
-      <p id="lock-subtitle" class="lock-card__subtitle">Protected delivery intelligence for partners and drivers.</p>
-      <form id="lock-form" class="lock-form" novalidate>
-        <label for="lock-password">Access password</label>
-        <input type="password" id="lock-password" name="password" autocomplete="current-password" required />
-        <button type="submit" class="btn">Enter</button>
-        <p class="lock-form__note">Client-side lock for demonstration only.</p>
-        <p id="lock-error" class="lock-form__error" role="status" aria-live="polite"></p>
-      </form>
-    </div>
-  </div>
-
-  <div id="app" class="app-shell" aria-hidden="true">
-    <aside id="sidebar" class="sidebar" aria-label="Route controls">
-      <header class="sidebar__header" aria-label="Partner logos">
-        <div class="sidebar__brand">
-          <img src="./assets/logo-main.svg" alt="SnowCap logo" class="sidebar__brand-logo" />
-          <div class="sidebar__brand-partners">
-            <img src="./assets/logo-partner-1.svg" alt="Partner 1 logo" />
-            <img src="./assets/logo-partner-2.svg" alt="Partner 2 logo" />
-          </div>
-        </div>
-        <p class="sidebar__tagline">Coordinating deliveries across Portland &amp; Gresham.</p>
-      </header>
-
-      <div class="sidebar__controls" id="sidebar-controls">
-        <button type="button" class="btn" id="show-all">Show All Routes</button>
-        <button type="button" class="btn btn-secondary" id="edit-route" aria-pressed="false">Edit Route</button>
-        <button type="button" class="btn btn-tertiary" id="clear-address">Clear Address</button>
+    <div id="lock" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lock-title">
+      <div class="lock-card">
+        <img src="./assets/logo-main.svg" alt="SnowCap logo" class="app-logo" />
+        <h1 id="lock-title" class="lock-title">Enter Access Code</h1>
+        <form id="lock-form" class="lock-form" novalidate>
+          <label for="lock-password" class="sr-only">Access code</label>
+          <input
+            type="password"
+            id="lock-password"
+            name="password"
+            placeholder="Access code"
+            autocomplete="current-password"
+            required
+          />
+          <button type="submit" class="btn">Enter</button>
+          <p id="lock-error" class="form-error" role="status" aria-live="polite"></p>
+        </form>
       </div>
+    </div>
 
-      <section id="edit-panel" class="edit-panel" hidden aria-live="polite">
-        <h2 class="section-title">Edit mode</h2>
-        <p class="edit-panel__instructions">
-          Select a route to drag stops, click the map to add new stops, or tap an existing stop to delete it. Save to persist or cancel to revert.
-        </p>
-        <div class="edit-panel__actions">
-          <button type="button" class="btn btn-save" id="save-route" disabled>Save Changes</button>
-          <button type="button" class="btn btn-cancel" id="cancel-edit">Cancel</button>
+    <div id="app" class="app-shell" aria-hidden="true">
+      <aside class="sidebar" aria-label="Route controls">
+        <div class="sidebar__top">
+          <img src="./assets/logo-main.svg" alt="SnowCap logo" class="app-logo" />
+          <button id="theme-toggle" class="icon-btn" type="button" aria-pressed="true" aria-label="Switch to light mode">
+            🌙
+          </button>
         </div>
-      </section>
-
-      <section class="sidebar__routes" aria-labelledby="routes-heading">
-        <div class="section-heading">
-          <h2 class="section-title" id="routes-heading">Routes</h2>
-          <p class="section-caption" id="route-summary" aria-live="polite"></p>
+        <div class="sidebar__summary" id="route-summary" aria-live="polite"></div>
+        <div class="sidebar__controls">
+          <button id="show-all" type="button" class="btn">Show All Routes</button>
         </div>
-        <ul id="route-list" class="route-list" aria-live="polite" aria-describedby="routes-heading"></ul>
-      </section>
-
-      <section class="sidebar__results" id="results-panel" aria-live="polite" aria-atomic="true">
-        <h2 class="section-title">Closest route</h2>
-        <p class="result-text">Search for an address to see the nearest route.</p>
-      </section>
-
-      <form id="address-form" class="sidebar__form" autocomplete="off">
-        <label for="address-input">Find the closest route</label>
-        <div class="form-row">
-          <input type="text" id="address-input" name="address" placeholder="Enter an address" required />
-          <button type="submit" class="btn">Find</button>
+        <ul id="route-list" class="route-list" aria-label="Available routes"></ul>
+      </aside>
+      <main class="map-wrapper" role="application" aria-label="Route map">
+        <div id="map" class="map" aria-live="polite"></div>
+        <div id="map-loader" class="map-loader" role="status" aria-live="polite" aria-hidden="true">
+          <div class="spinner" aria-hidden="true"></div>
+          <p class="loader-text">Loading map…</p>
         </div>
-      </form>
+      </main>
+    </div>
 
-      <footer class="sidebar__footer" aria-label="Supporting partners">
-        <img src="./assets/logo-partner-1.svg" alt="Partner 1 logo" />
-        <img src="./assets/logo-partner-2.svg" alt="Partner 2 logo" />
-      </footer>
-    </aside>
-    <main id="map" class="map" role="application" aria-label="Route map"></main>
-  </div>
-
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBn9OGAgLMcnwt63LE2truyOuFQw6_dC0Q&libraries=geometry,places" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js" defer></script>
-  <script src="./js/config.js" defer></script>
-  <script src="./js/auth.js" defer></script>
-  <script src="./js/routes.js" defer></script>
-  <script src="./js/utils.js" defer></script>
-  <script src="./js/app.js" defer></script>
-</body>
+    <script src="./js/config.js" defer></script>
+    <script src="./js/auth.js" defer></script>
+    <script src="./js/routes.js" defer></script>
+    <script src="./js/app.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js" defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" defer></script>
+  </body>
 </html>
