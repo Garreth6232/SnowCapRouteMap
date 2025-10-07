@@ -4,9 +4,11 @@
   const THEME_KEY = "scrm-theme";
   const DARK = "dark";
   const LIGHT = "light";
-  const ROUTE_REQUEST_DELAY = 250;
+  const ROUTE_REQUEST_DELAY = 300;
   const DISTANCE_WARNING_MILES = 25;
   const HIGHLIGHT_DURATION = 2600;
+  const ROUTE_CACHE_PREFIX = "routeCache_";
+  const ROUTE_CACHE_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 
   const mapStyles = {
     dark: [
@@ -31,6 +33,7 @@
   let distanceInput;
   let distanceResultEl;
   let distanceClearBtn;
+  let cacheStatusEl;
 
   let map;
   let mapReady = false;
@@ -67,6 +70,130 @@
 
   function wait(ms) {
     return new Promise((resolve) => window.setTimeout(resolve, ms));
+  }
+
+  function getRouteCacheKey(route) {
+    return `${ROUTE_CACHE_PREFIX}${route.name}`;
+  }
+
+  function toLatLngInstance(value) {
+    if (!value) return value;
+    if (typeof google === "undefined" || !google.maps || typeof google.maps.LatLng !== "function") {
+      return value;
+    }
+    if (value instanceof google.maps.LatLng) {
+      return value;
+    }
+    if (typeof value.lat === "function" && typeof value.lng === "function") {
+      return value;
+    }
+    const lat =
+      typeof value.lat === "number"
+        ? value.lat
+        : typeof value.lat === "object" && value.lat && typeof value.lat.value === "number"
+        ? value.lat.value
+        : null;
+    const lng =
+      typeof value.lng === "number"
+        ? value.lng
+        : typeof value.lng === "object" && value.lng && typeof value.lng.value === "number"
+        ? value.lng.value
+        : null;
+    if (typeof lat === "number" && typeof lng === "number") {
+      return new google.maps.LatLng(lat, lng);
+    }
+    return value;
+  }
+
+  function rehydrateDirectionsResult(result) {
+    if (!result || typeof google === "undefined" || !google.maps) {
+      return result;
+    }
+    if (!Array.isArray(result.routes)) {
+      return result;
+    }
+    result.routes.forEach((route) => {
+      if (route && route.bounds && !(route.bounds instanceof google.maps.LatLngBounds)) {
+        const { south, west, north, east } = route.bounds;
+        if ([south, west, north, east].every((value) => typeof value === "number")) {
+          route.bounds = new google.maps.LatLngBounds(
+            new google.maps.LatLng(south, west),
+            new google.maps.LatLng(north, east)
+          );
+        }
+      }
+
+      if (Array.isArray(route.overview_path)) {
+        route.overview_path = route.overview_path.map((point) => toLatLngInstance(point));
+      }
+
+      if (Array.isArray(route.legs)) {
+        route.legs.forEach((leg) => {
+          leg.start_location = toLatLngInstance(leg.start_location);
+          leg.end_location = toLatLngInstance(leg.end_location);
+          if (Array.isArray(leg.via_waypoints)) {
+            leg.via_waypoints = leg.via_waypoints.map((point) => toLatLngInstance(point));
+          }
+          if (Array.isArray(leg.steps)) {
+            leg.steps.forEach((step) => {
+              step.start_location = toLatLngInstance(step.start_location);
+              step.end_location = toLatLngInstance(step.end_location);
+              if (Array.isArray(step.path)) {
+                step.path = step.path.map((point) => toLatLngInstance(point));
+              }
+            });
+          }
+        });
+      }
+    });
+    return result;
+  }
+
+  function getRouteCacheEntry(route, { rehydrate = false } = {}) {
+    if (typeof localStorage === "undefined") return null;
+    const cacheKey = getRouteCacheKey(route);
+    let raw = null;
+    try {
+      raw = localStorage.getItem(cacheKey);
+    } catch (error) {
+      console.warn(`Unable to access cache for ${route.name}:`, error);
+      return null;
+    }
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed.timestamp !== "number" || !parsed.data) {
+        localStorage.removeItem(cacheKey);
+        return null;
+      }
+      const isFresh = Date.now() - parsed.timestamp < ROUTE_CACHE_MAX_AGE;
+      if (!isFresh) {
+        localStorage.removeItem(cacheKey);
+        return null;
+      }
+      if (rehydrate) {
+        parsed.data = rehydrateDirectionsResult(parsed.data);
+      }
+      return parsed;
+    } catch (error) {
+      console.warn(`Failed to parse cache for ${route.name}:`, error);
+      localStorage.removeItem(cacheKey);
+      return null;
+    }
+  }
+
+  function storeRouteCache(route, result, usedStops) {
+    if (typeof localStorage === "undefined") return;
+    const cacheKey = getRouteCacheKey(route);
+    try {
+      localStorage.setItem(
+        cacheKey,
+        JSON.stringify({ timestamp: Date.now(), data: result, usedStops })
+      );
+      console.log(`💾 Cached route ${route.name} successfully`);
+    } catch (error) {
+      console.warn(`Failed to cache route ${route.name}:`, error);
+    }
   }
 
   function getStoredTheme() {
@@ -137,6 +264,17 @@
       return sum + route.addresses.length;
     }, 0);
     summaryEl.textContent = `${ROUTES.length} routes · ${totalStops} stops`;
+  }
+
+  function updateCacheStatus() {
+    if (!cacheStatusEl) return;
+    let cachedCount = 0;
+    ROUTES.forEach((route) => {
+      if (getRouteCacheEntry(route)) {
+        cachedCount += 1;
+      }
+    });
+    cacheStatusEl.textContent = `Cached Routes: ${cachedCount}/${ROUTES.length}`;
   }
 
   function collapseAllRoutes(exceptId = null) {
@@ -632,10 +770,6 @@
   }
 
   async function renderRoute(route, delay = 0) {
-    if (delay) {
-      await wait(delay);
-    }
-
     const existing = routeData.get(route.id);
     if (existing) {
       if (existing.highlightTimeout) {
@@ -648,6 +782,13 @@
     }
 
     const availableStops = sanitizeStops(route.id);
+    const cacheEntry = getRouteCacheEntry(route, { rehydrate: true });
+    const fromCache = !!cacheEntry;
+
+    if (!fromCache && delay) {
+      await wait(delay);
+    }
+
     const basePolylineOptions = {
       strokeColor: route.color,
       strokeWeight: 4,
@@ -677,12 +818,16 @@
         highlightTimeout: null
       });
       updateRouteLength(route.id, availableStops.length, null);
+      updateCacheStatus();
       return;
     }
 
-    const request = buildDirectionsRequest(route, availableStops);
     const renderer = ensureRenderer(route);
-    const response = await requestDirections(request, route, availableStops);
+    const request = fromCache ? null : buildDirectionsRequest(route, availableStops);
+    const response = fromCache
+      ? { result: cacheEntry.data, usedStops: cacheEntry.usedStops || availableStops }
+      : await requestDirections(request, route, availableStops);
+
     if (!response) {
       renderer.setMap(null);
       const markers = availableStops.filter((stop) => !!stop.location).map((stop) =>
@@ -707,10 +852,16 @@
         highlightTimeout: null
       });
       updateRouteLength(route.id, availableStops.length, null);
+      updateCacheStatus();
       return;
     }
 
     const { result, usedStops } = response;
+    if (fromCache) {
+      console.log(`✅ Loaded route ${route.name} from cache`);
+    } else {
+      storeRouteCache(route, result, usedStops);
+    }
     renderer.setDirections(result);
 
     const bounds = result.routes[0] && result.routes[0].bounds ? result.routes[0].bounds : null;
@@ -740,6 +891,7 @@
     });
 
     updateRouteLength(route.id, usedStops.length, miles);
+    updateCacheStatus();
   }
 
   async function renderAllRoutes() {
@@ -948,10 +1100,12 @@
     distanceInput = $("#distance-address");
     distanceResultEl = $("#distance-result");
     distanceClearBtn = $("#distance-clear");
+    cacheStatusEl = $("#cache-status");
 
     applyTheme(getStoredTheme(), false);
     buildRouteList();
     updateSummary();
+    updateCacheStatus();
     bindUI();
   });
 

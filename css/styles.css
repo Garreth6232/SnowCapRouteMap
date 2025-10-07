@@ -272,6 +272,15 @@ button {
   min-height: 0;
 }
 
+#cache-status {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: auto;
+  padding: var(--space-sm) 0;
+  border-top: 1px solid var(--color-border);
+}
+
 .route-item {
   border-radius: var(--radius-md);
   background: var(--color-surface-elevated);
