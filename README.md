@@ -15,8 +15,9 @@ A modernized, client-side route visualization for the SnowCap delivery network. 
 ## Getting started
 
 1. Replace `YOUR_API_KEY` in `index.html` with a valid Google Maps JavaScript API key that has the Maps JavaScript API enabled.
-2. (Optional) Update the password in `js/config.js` by changing `PUBLIC_PASSWORD`.
-3. Open `index.html` locally in a browser or deploy the project as-is to GitHub Pages.
+2. Add your production logo to `assets/` named `snowcapmain.png` so the UI branding renders correctly.
+3. (Optional) Update the password in `js/config.js` by changing `PUBLIC_PASSWORD`.
+4. Open `index.html` locally in a browser or deploy the project as-is to GitHub Pages.
 
 All dependencies load from public CDNs, and no build tooling or server is required.
 
@@ -27,9 +28,7 @@ All dependencies load from public CDNs, and no build tooling or server is requir
 ├─ index.html
 ├─ README.md
 ├─ assets/
-│  ├─ logo-main.svg
-│  ├─ logo-partner-1.svg
-│  └─ logo-partner-2.svg
+│  └─ snowcapmain.png (add your production logo file here)
 ├─ css/
 │  └─ styles.css
 └─ js/
