@@ -1,4 +1,4 @@
-export const ROUTES = [
+const ROUTES = [
   {
     id: "route-01",
     name: "Route 1",
