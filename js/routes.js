@@ -2,7 +2,7 @@ const ROUTES = [
   {
     id: "route-01",
     name: "Route 1",
-    color: "#e6194b",
+    color: "#FF5555",
     addresses: [
       "16901 SE Division St, Portland 97236",
       "9850 NE Everett St, Portland 97220",
@@ -21,14 +21,14 @@ const ROUTES = [
   {
     id: "route-02",
     name: "Route 2",
-    color: "#3cb44b",
+    color: "#33A1FD",
     addresses: ["777 NE 8th Ave, Gresham 97030"],
     coordinates: [[45.4996, -122.4314]]
   },
   {
     id: "route-03",
     name: "Route 3",
-    color: "#ffe119",
+    color: "#FFD700",
     addresses: [
       "203 SE 162nd Ave, Portland 97233",
       "4405 NE 133rd Ave, Portland 97230",
@@ -43,14 +43,14 @@ const ROUTES = [
   {
     id: "route-04",
     name: "Route 4",
-    color: "#0082c8",
+    color: "#7CFC00",
     addresses: ["4515 W Powell Blvd, Gresham 97030"],
     coordinates: [[45.4894, -122.4439]]
   },
   {
     id: "route-05",
     name: "Route 5",
-    color: "#f58231",
+    color: "#FF8C00",
     addresses: [
       "724 NE 195th Ave, Portland 97230",
       "16920 SE Powell Blvd, Portland 97236",
@@ -69,7 +69,7 @@ const ROUTES = [
   {
     id: "route-06",
     name: "Route 6",
-    color: "#911eb4",
+    color: "#C71585",
     addresses: [
       "16977 NE Halsey St, Portland 97230",
       "660 SE 212th Ave, Gresham 97030",
@@ -86,14 +86,14 @@ const ROUTES = [
   {
     id: "route-07",
     name: "Route 7",
-    color: "#46f0f0",
+    color: "#00CED1",
     addresses: ["777 NE 8th Ave, Gresham 97030"],
     coordinates: [[45.4996, -122.4314]]
   },
   {
     id: "route-08",
     name: "Route 8",
-    color: "#f032e6",
+    color: "#FF1493",
     addresses: [
       "930 SE 212th Ave, Gresham 97030",
       "17366 NE Halsey St, Portland 97230",
@@ -110,7 +110,7 @@ const ROUTES = [
   {
     id: "route-09",
     name: "Route 9",
-    color: "#d2f53c",
+    color: "#9370DB",
     addresses: [
       "16745 SE Division St, Portland 97236",
       "100 NE 188th Ave, Portland 97230",
@@ -125,7 +125,7 @@ const ROUTES = [
   {
     id: "route-10",
     name: "Route 10",
-    color: "#fabebe",
+    color: "#00FA9A",
     addresses: [
       "2711 W Powell Blvd, Gresham 97030",
       "1999 NE Division St, Gresham 97030",
@@ -144,7 +144,7 @@ const ROUTES = [
   {
     id: "route-11",
     name: "Route 11",
-    color: "#008080",
+    color: "#FF4500",
     addresses: [
       "765 Mt Hood Hwy, Gresham 97080",
       "1212 NE Linden Ave, Gresham 97030",
@@ -163,7 +163,7 @@ const ROUTES = [
   {
     id: "route-12",
     name: "Route 12",
-    color: "#e6beff",
+    color: "#1E90FF",
     addresses: [
       "2629 SE 136th Ave, Portland 97236",
       "4751 NE 99th Ave, Portland 97220",
@@ -184,7 +184,7 @@ const ROUTES = [
   {
     id: "route-13",
     name: "Route 13",
-    color: "#aa6e28",
+    color: "#ADFF2F",
     addresses: [
       "937 NE Hood Ave, Gresham 97030",
       "1280 NE Kane Dr, Gresham 97030",
