@@ -1,55 +1,55 @@
-# SnowCap Route Map
+# SnowCap Route Mapper
 
-A lightweight Google Maps demo that visualizes 13 example routes around Austin, TX. Enter an address to locate the closest route using straight-line distance powered by Turf.js.
+Static front-end route visualization for the SnowCap network. The site is modernized with a responsive layout, password gate, and interactive Google Map showing 13 predefined routes. Everything runs client-side, making it ideal for GitHub Pages hosting.
 
-## Quick start
+## Features
 
-1. Open `index.html` and replace `YOUR_API_KEY` in the Google Maps script tag with your API key.
-2. Ensure the API key has the following APIs enabled:
-   - Maps JavaScript API
-   - Geocoding API
-3. Save the file and open `index.html` directly in a browser, or commit the project to a GitHub repository and enable GitHub Pages.
+- Password lock screen with casual client-side protection using `sessionStorage` to remember successful unlocks for the session.
+- Responsive split layout with sidebar controls, results panel, and Google Map view.
+- Sidebar slots for organization and partner logos (replace SVG placeholders in `assets/`).
+- Route list with color badges that match polylines on the map. Toggle between viewing all routes or focusing on a single selection.
+- Address search powered by the Google Maps Geocoding service. The nearest route is highlighted with a dashed connector and distance summary using Turf.js geometry helpers.
+- Optional light/dark theme toggle that swaps CSS variable values instantly on the client.
 
-> **Tip:** GitHub Pages can host the site directly from the `main` branch or the `/docs` folder. No build tools are required.
+## Getting started
 
-## Using the app
+1. Replace `YOUR_API_KEY` in `index.html` with a valid Google Maps JavaScript API key. Make sure the Maps JavaScript API and Geocoding API are enabled for that key.
+2. (Optional) Update the password in `js/config.js` by editing `PUBLIC_PASSWORD`.
+3. Open `index.html` directly in a browser or deploy the project to GitHub Pages.
 
-- The sidebar lists every route with a matching color swatch. Select **Show all routes** to view the full network, or click a route to focus on it.
-- Enter an address and click **Find closest route** to geocode the location. The app drops a marker, highlights the closest route, draws a dashed connector to the closest point on that route, and displays the name and distance in miles.
-- Use **Clear address** to remove the marker and connector without changing the current route visibility.
+No build step or server is required. All dependencies load from public CDNs when the page runs.
 
-All distance calculations are straight-line measurements (“as the crow flies”) computed with Turf.js.
+## File structure
 
-## Replacing the demo routes
-
-Edit `routes.js` and replace the `coordinates` arrays with your own data. Each route object must include:
-
-```js
-{
-  id: "Route 01",
-  name: "Route 01",
-  color: "#e6194b",
-  coordinates: [
-    [30.2685, -97.7422],
-    [30.2704, -97.7365],
-    [30.2723, -97.7298]
-  ]
-}
+```
+/
+├─ index.html
+├─ README.md
+├─ assets/
+│  ├─ logo-main.svg
+│  ├─ logo-partner-1.svg
+│  └─ logo-partner-2.svg
+├─ css/
+│  └─ styles.css
+└─ js/
+   ├─ app.js
+   ├─ auth.js
+   ├─ config.js
+   ├─ routes.js
+   └─ utils.js
 ```
 
-- Keep coordinates as `[latitude, longitude]` pairs.
-- Provide at least three points per route so the line renders cleanly.
-- Use unique colors so the sidebar swatches and map polylines remain distinct.
+## Development notes
 
-## Notes on Google usage
+- All scripts are loaded with `defer` so that HTML parsing is never blocked.
+- The Google Map initializes only after the password gate unlocks, keeping the splash screen lightweight.
+- Turf.js is used for closest-route calculations (`nearestPointOnLine` and `distance`).
+- Styling uses CSS custom properties and a mobile-first layout. Update the palette or spacing scale in `css/styles.css` as needed.
 
-- Google APIs are billed based on usage. Review your quota in the Google Cloud Console and set budget alerts if needed.
-- Geocoding responses are cached only in memory; refreshing the page resets the state.
-- When hosting publicly, restrict your API key to trusted domains and HTTPS.
+## Customization checklist
 
-## Tech stack
+- Swap SVG logos in `assets/` with brand assets and update anchor links in `index.html`.
+- Edit `js/routes.js` to adjust coordinates, names, and colors for each route.
+- Tune map defaults or add additional UI in `js/app.js`.
 
-- Vanilla HTML, CSS, and JavaScript
-- Google Maps JavaScript API
-- Google Geocoding API
-- Turf.js for spatial calculations
+Happy mapping!
