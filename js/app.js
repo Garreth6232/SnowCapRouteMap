@@ -41,6 +41,13 @@
   let geocoder;
   let infoWindow;
 
+  let distanceAutocomplete = null;
+  let lastDistancePlace = null;
+  let lastDistancePlaceValue = "";
+  let programmaticDistanceInputUpdate = false;
+
+  let isDarkMode = true;
+
   const geocodeCache = new Map();
   const validatedStops = new Map();
 
@@ -83,8 +90,17 @@
     }
   }
 
+  function updateInfoWindowColors() {
+    if (!infoWindow) return;
+    const content = infoWindow.getContent();
+    if (content && typeof content === "object" && content.style) {
+      content.style.color = isDarkMode ? "#ffffff" : "#000000";
+    }
+  }
+
   function applyTheme(theme, persist = true) {
     const normalized = theme === LIGHT ? LIGHT : DARK;
+    isDarkMode = normalized === DARK;
     document.documentElement.setAttribute("data-theme", normalized);
     updateThemeToggle(normalized);
     if (persist) {
@@ -93,6 +109,7 @@
     if (map) {
       map.setOptions({ styles: mapStyles[normalized] });
     }
+    updateInfoWindowColors();
   }
 
   function toggleTheme() {
@@ -268,6 +285,16 @@
     return infoWindow;
   }
 
+  function storeDistancePlace(place, value = "") {
+    if (place && place.geometry && place.geometry.location) {
+      lastDistancePlace = place;
+      lastDistancePlaceValue = value.trim();
+    } else {
+      lastDistancePlace = null;
+      lastDistancePlaceValue = "";
+    }
+  }
+
   function resetDistanceOverlays() {
     if (distanceMarker) {
       distanceMarker.setMap(null);
@@ -287,6 +314,7 @@
       distanceInput.value = "";
     }
     resetDistanceOverlays();
+    storeDistancePlace(null);
   }
 
   function showAllRoutes() {
@@ -338,6 +366,7 @@
 
     const content = document.createElement("div");
     content.className = "info-window";
+    content.style.color = isDarkMode ? "#ffffff" : "#000000";
     const title = document.createElement("strong");
     title.textContent = stop.address;
     content.appendChild(title);
@@ -350,6 +379,7 @@
     const windowInstance = ensureInfoWindow();
     windowInstance.setContent(content);
     windowInstance.open({ map, anchor: marker });
+    updateInfoWindowColors();
     map.panTo(marker.getPosition());
   }
 
@@ -372,20 +402,17 @@
     }, duration);
   }
 
-  function drawDistanceConnector(routeId, targetLatLng, nearestLatLng) {
+  function drawDistanceConnector(targetLatLng, nearestLatLng) {
     resetDistanceOverlays();
-
-    const data = routeData.get(routeId);
-    const color = data ? data.color : "#ffffff";
 
     distanceMarker = new google.maps.Marker({
       position: targetLatLng,
       map,
       icon: {
         path: google.maps.SymbolPath.CIRCLE,
-        fillColor: "#ffffff",
+        fillColor: "#ff5555",
         fillOpacity: 1,
-        strokeColor: color,
+        strokeColor: "#ffffff",
         strokeOpacity: 1,
         strokeWeight: 2,
         scale: 6
@@ -398,9 +425,9 @@
       distanceConnector = new google.maps.Polyline({
         path: [targetLatLng, nearestLatLng],
         map,
-        strokeColor: color,
-        strokeOpacity: 0,
-        strokeWeight: 0,
+        strokeColor: "#cccccc",
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
         icons: [
           {
             icon: {
@@ -410,7 +437,7 @@
               scale: 4
             },
             offset: "0",
-            repeat: "12px"
+            repeat: "10px"
           }
         ]
       });
@@ -727,27 +754,56 @@
     }
   }
 
-  async function handleDistanceCheck(event) {
-    event.preventDefault();
+  async function handleDistanceCheck(event, selectedPlace = null) {
+    if (event) {
+      event.preventDefault();
+    }
     if (!distanceInput || !distanceResultEl) return;
     const value = distanceInput.value.trim();
-    if (!value) {
-      distanceResultEl.textContent = "Enter an address to calculate distance.";
-      return;
+
+    let place = selectedPlace;
+    if (!place && lastDistancePlace && value && value === lastDistancePlaceValue) {
+      place = lastDistancePlace;
     }
 
-    const { status, result } = await geocodeAddress(value);
-    if (!result) {
-      distanceResultEl.textContent = `Unable to locate address (${status}).`;
-      resetDistanceOverlays();
-      return;
+    let location = null;
+
+    if (place && place.geometry && place.geometry.location) {
+      location = {
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng()
+      };
     }
 
-    const location = toLatLngLiteral(result);
     if (!location) {
-      distanceResultEl.textContent = "Unable to resolve the selected location.";
-      resetDistanceOverlays();
-      return;
+      if (!value) {
+        distanceResultEl.textContent = "Enter an address to calculate distance.";
+        return;
+      }
+
+      const { status, result } = await geocodeAddress(value);
+      if (!result) {
+        distanceResultEl.textContent = `Unable to locate address (${status}).`;
+        resetDistanceOverlays();
+        storeDistancePlace(null);
+        return;
+      }
+
+      const resolved = toLatLngLiteral(result);
+      if (!resolved) {
+        distanceResultEl.textContent = "Unable to resolve the selected location.";
+        resetDistanceOverlays();
+        storeDistancePlace(null);
+        return;
+      }
+
+      location = resolved;
+    } else if (place) {
+      const storedValue = (place.formatted_address || place.name || value || "").trim();
+      programmaticDistanceInputUpdate = true;
+      distanceInput.value = storedValue;
+      programmaticDistanceInputUpdate = false;
+      storeDistancePlace(place, storedValue);
     }
 
     const point = typeof turf !== "undefined" ? turf.point([location.lng, location.lat]) : null;
@@ -776,11 +832,38 @@
       return;
     }
 
-    distanceResultEl.textContent = `Closest route: ${ROUTES.find((route) => route.id === bestRouteId)?.name || bestRouteId} · ${bestDistance.toFixed(2)} miles away.`;
+    distanceResultEl.textContent = `Closest route: ${
+      ROUTES.find((route) => route.id === bestRouteId)?.name || bestRouteId
+    } · ${bestDistance.toFixed(2)} miles away.`;
 
-    drawDistanceConnector(bestRouteId, location, nearestPoint);
+    drawDistanceConnector(location, nearestPoint);
     highlightRoute(bestRouteId);
     focusRoute(bestRouteId);
+  }
+
+  function setupDistanceAutocomplete() {
+    if (!distanceInput || typeof google === "undefined" || !google.maps || !google.maps.places || distanceAutocomplete) {
+      return;
+    }
+
+    distanceAutocomplete = new google.maps.places.Autocomplete(distanceInput, {
+      fields: ["geometry", "formatted_address", "name"]
+    });
+    distanceAutocomplete.bindTo("bounds", map);
+
+    distanceAutocomplete.addListener("place_changed", () => {
+      const place = distanceAutocomplete.getPlace();
+      if (!place || !place.geometry || !place.geometry.location) {
+        storeDistancePlace(null);
+        return;
+      }
+      const displayValue = (place.formatted_address || place.name || distanceInput.value || "").trim();
+      programmaticDistanceInputUpdate = true;
+      distanceInput.value = displayValue;
+      programmaticDistanceInputUpdate = false;
+      storeDistancePlace(place, displayValue);
+      handleDistanceCheck(null, place);
+    });
   }
 
   function bindUI() {
@@ -802,6 +885,17 @@
         clearDistanceUI();
         collapseAllRoutes(null);
         showAllRoutes();
+      });
+    }
+    if (distanceInput) {
+      distanceInput.addEventListener("input", () => {
+        if (programmaticDistanceInputUpdate) {
+          return;
+        }
+        const currentValue = distanceInput.value.trim();
+        if (!currentValue || currentValue !== lastDistancePlaceValue) {
+          storeDistancePlace(null);
+        }
       });
     }
   }
@@ -828,6 +922,8 @@
     directionsService = new google.maps.DirectionsService();
     geocoder = new google.maps.Geocoder();
     infoWindow = new google.maps.InfoWindow();
+
+    setupDistanceAutocomplete();
 
     await validateRoutes();
     await renderAllRoutes();

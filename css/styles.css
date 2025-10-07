@@ -81,6 +81,15 @@ button {
   text-align: center;
 }
 
+#lock {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  color: #ffffff;
+}
+
 .lock-screen {
   position: fixed;
   inset: 0;
@@ -109,6 +118,11 @@ button {
   display: grid;
   gap: var(--space-md);
   text-align: center;
+}
+
+#lock .app-logo {
+  max-width: 200px;
+  margin-bottom: 20px;
 }
 
 .lock-title {
