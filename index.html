@@ -44,6 +44,25 @@
           <button id="show-all" type="button" class="btn">Show All Routes</button>
         </div>
         <ul id="route-list" class="route-list" aria-label="Available routes"></ul>
+        <section id="check-distance" class="sidebar__distance" aria-labelledby="check-distance-title">
+          <h2 id="check-distance-title">Check Distance to Route</h2>
+          <form id="distance-form" class="distance-form" novalidate>
+            <label class="distance-label" for="distance-address">Address</label>
+            <input
+              type="text"
+              id="distance-address"
+              name="distance-address"
+              placeholder="Enter an address"
+              autocomplete="street-address"
+              required
+            />
+            <div class="distance-actions">
+              <button type="submit" class="btn distance-check">Check Distance</button>
+              <button type="button" id="distance-clear" class="btn btn--ghost">Clear</button>
+            </div>
+          </form>
+          <p id="distance-result" class="distance-result" role="status" aria-live="polite"></p>
+        </section>
       </aside>
       <main class="map-wrapper" role="application" aria-label="Route map">
         <div id="map" class="map" aria-live="polite"></div>
@@ -59,6 +78,6 @@
     <script src="./js/routes.js" defer></script>
     <script src="./js/app.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js" defer></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBn9OGAgLMcnwt63LE2truyOuFQw6_dC0Q&callback=initMap" defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" defer></script>
   </body>
 </html>
