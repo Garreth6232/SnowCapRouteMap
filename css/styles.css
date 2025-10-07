@@ -389,6 +389,15 @@ button {
   transform: translateY(-1px);
 }
 
+.route-stop-button.is-selected {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: inherit !important;
+}
+
+:root[data-theme="light"] .route-stop-button.is-selected {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
 .route-stop-index {
   width: 1.5rem;
   height: 1.5rem;
@@ -553,4 +562,10 @@ button {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+.gm-style-iw,
+.gm-style-iw-d {
+  color: #222 !important;
+  font-weight: 500;
 }
