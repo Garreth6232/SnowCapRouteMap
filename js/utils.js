@@ -5,8 +5,13 @@ const Utils = (() => {
   }
 
   function toLineString(coords) {
-    if (!Array.isArray(coords)) return turf.lineString([]);
+    if (!Array.isArray(coords) || coords.length === 0) {
+      return turf.lineString([]);
+    }
     const turfCoords = coords.map(([lat, lng]) => [lng, lat]);
+    if (turfCoords.length === 1) {
+      turfCoords.push([...turfCoords[0]]);
+    }
     return turf.lineString(turfCoords);
   }
 

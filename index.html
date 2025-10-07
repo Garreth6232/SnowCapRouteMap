@@ -10,16 +10,17 @@
   <noscript>
     <div class="noscript">This application requires JavaScript to run. Please enable JavaScript in your browser.</div>
   </noscript>
+
   <div id="lock" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lock-title" aria-describedby="lock-subtitle">
     <div class="lock-card">
-      <img src="./assets/logo-main.svg" alt="SnowCap Route Mapper logo" class="lock-card__logo" />
+      <img src="./assets/logo-main.svg" alt="SnowCap main logo" class="lock-card__logo" />
       <h1 id="lock-title">SnowCap Route Mapper</h1>
-      <p id="lock-subtitle">Enter the access password to continue.</p>
+      <p id="lock-subtitle" class="lock-card__subtitle">Protected delivery intelligence for partners and drivers.</p>
       <form id="lock-form" class="lock-form" novalidate>
-        <label for="lock-password">Password</label>
+        <label for="lock-password">Access password</label>
         <input type="password" id="lock-password" name="password" autocomplete="current-password" required />
-        <button type="submit" class="btn">Continue</button>
-        <p class="lock-form__note">This lock is client side only.</p>
+        <button type="submit" class="btn">Enter</button>
+        <p class="lock-form__note">Client-side lock for demonstration only.</p>
         <p id="lock-error" class="lock-form__error" role="status" aria-live="polite"></p>
       </form>
     </div>
@@ -27,34 +28,47 @@
 
   <div id="app" class="app-shell" aria-hidden="true">
     <aside id="sidebar" class="sidebar" aria-label="Route controls">
-      <header class="sidebar__header" aria-label="Organization logos">
-        <a href="#" class="logo-slot main-logo" aria-label="Primary organization link">
-          <img src="./assets/logo-main.svg" alt="Primary logo" />
-        </a>
-        <a href="#" class="logo-slot" aria-label="Secondary organization link placeholder">
-          <span>Logo</span>
-        </a>
-        <a href="#" class="logo-slot" aria-label="Tertiary organization link placeholder">
-          <span>Logo</span>
-        </a>
+      <header class="sidebar__header" aria-label="Partner logos">
+        <div class="sidebar__brand">
+          <img src="./assets/logo-main.svg" alt="SnowCap logo" class="sidebar__brand-logo" />
+          <div class="sidebar__brand-partners">
+            <img src="./assets/logo-partner-1.svg" alt="Partner 1 logo" />
+            <img src="./assets/logo-partner-2.svg" alt="Partner 2 logo" />
+          </div>
+        </div>
+        <p class="sidebar__tagline">Coordinating deliveries across Portland &amp; Gresham.</p>
       </header>
+
       <div class="sidebar__controls" id="sidebar-controls">
-        <button type="button" class="btn" id="show-all">Show all routes</button>
-        <button type="button" class="btn btn-secondary" id="clear-address">Clear address</button>
-        <button type="button" class="btn btn-tertiary" id="theme-toggle" aria-pressed="false">Toggle theme</button>
+        <button type="button" class="btn" id="show-all">Show All Routes</button>
+        <button type="button" class="btn btn-secondary" id="edit-route" aria-pressed="false">Edit Route</button>
+        <button type="button" class="btn btn-tertiary" id="clear-address">Clear Address</button>
       </div>
-      <section class="sidebar__routes" aria-labelledby="routes-heading">
-        <h2 class="section-title" id="routes-heading">Routes</h2>
-        <ul id="route-list" class="route-list" aria-live="polite"></ul>
+
+      <section id="edit-panel" class="edit-panel" hidden aria-live="polite">
+        <h2 class="section-title">Edit mode</h2>
+        <p class="edit-panel__instructions">
+          Select a route to drag stops, click the map to add new stops, or tap an existing stop to delete it. Save to persist or cancel to revert.
+        </p>
+        <div class="edit-panel__actions">
+          <button type="button" class="btn btn-save" id="save-route" disabled>Save Changes</button>
+          <button type="button" class="btn btn-cancel" id="cancel-edit">Cancel</button>
+        </div>
       </section>
+
+      <section class="sidebar__routes" aria-labelledby="routes-heading">
+        <div class="section-heading">
+          <h2 class="section-title" id="routes-heading">Routes</h2>
+          <p class="section-caption" id="route-summary" aria-live="polite"></p>
+        </div>
+        <ul id="route-list" class="route-list" aria-live="polite" aria-describedby="routes-heading"></ul>
+      </section>
+
       <section class="sidebar__results" id="results-panel" aria-live="polite" aria-atomic="true">
         <h2 class="section-title">Closest route</h2>
         <p class="result-text">Search for an address to see the nearest route.</p>
       </section>
-      <footer class="sidebar__partners" aria-label="Partner logos">
-        <img src="./assets/logo-partner-1.svg" alt="Partner 1 logo" />
-        <img src="./assets/logo-partner-2.svg" alt="Partner 2 logo" />
-      </footer>
+
       <form id="address-form" class="sidebar__form" autocomplete="off">
         <label for="address-input">Find the closest route</label>
         <div class="form-row">
@@ -62,6 +76,11 @@
           <button type="submit" class="btn">Find</button>
         </div>
       </form>
+
+      <footer class="sidebar__footer" aria-label="Supporting partners">
+        <img src="./assets/logo-partner-1.svg" alt="Partner 1 logo" />
+        <img src="./assets/logo-partner-2.svg" alt="Partner 2 logo" />
+      </footer>
     </aside>
     <main id="map" class="map" role="application" aria-label="Route map"></main>
   </div>
