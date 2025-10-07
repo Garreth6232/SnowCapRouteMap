@@ -250,35 +250,21 @@ button {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-xs);
   overflow-y: auto;
-  max-height: calc(100vh - 280px);
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .route-item {
   border-radius: var(--radius-md);
   background: var(--color-surface-elevated);
   border: 1px solid transparent;
-  padding: var(--space-sm);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-sm);
+  flex-direction: column;
   transition: background 0.3s ease, transform 0.2s ease, border 0.3s ease;
-  cursor: pointer;
-}
-
-.route-item:hover,
-.route-item:focus-visible {
-  background: color-mix(in srgb, var(--color-accent) 25%, var(--color-surface-elevated));
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
-}
-
-.route-item:focus-visible {
-  outline: 3px solid rgba(79, 70, 229, 0.45);
-  outline-offset: 3px;
 }
 
 .route-item[data-active="true"] {
@@ -286,10 +272,36 @@ button {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 45%, transparent);
 }
 
+.route-toggle {
+  appearance: none;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  padding: var(--space-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  border-radius: var(--radius-md);
+}
+
+.route-item:hover .route-toggle,
+.route-item:focus-within .route-toggle {
+  background: color-mix(in srgb, var(--color-accent) 25%, var(--color-surface-elevated));
+  transform: translateY(-1px);
+}
+
+.route-toggle:focus-visible {
+  outline: 3px solid rgba(79, 70, 229, 0.45);
+  outline-offset: 3px;
+}
+
 .route-meta {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  flex: 1;
 }
 
 .route-name {
@@ -302,11 +314,134 @@ button {
 }
 
 .route-badge {
-  min-width: 18px;
-  min-height: 18px;
+  width: 12px;
+  height: 12px;
   border-radius: 999px;
   border: 1px solid rgba(0, 0, 0, 0.18);
   box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+
+.route-indicator {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  transition: transform 0.25s ease;
+}
+
+.route-item[data-expanded="true"] .route-indicator {
+  transform: rotate(90deg);
+}
+
+.route-stops {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--space-sm) var(--space-sm);
+  display: grid;
+  gap: 0.25rem;
+}
+
+.route-stops[hidden] {
+  display: none;
+}
+
+.route-stop-button {
+  appearance: none;
+  border: none;
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.25s ease, transform 0.2s ease;
+  text-align: left;
+}
+
+.route-stop-button:hover,
+.route-stop-button:focus-visible {
+  background: color-mix(in srgb, var(--color-accent) 22%, var(--color-surface-elevated));
+  transform: translateY(-1px);
+}
+
+.route-stop-index {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+}
+
+.sidebar__distance {
+  border-radius: var(--radius-md);
+  background: var(--color-surface-elevated);
+  padding: var(--space-md);
+  display: grid;
+  gap: var(--space-sm);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.sidebar__distance h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.distance-form {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.distance-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.distance-form input[type="text"] {
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.2);
+  transition: border 0.3s ease, background 0.3s ease;
+}
+
+:root[data-theme="light"] .distance-form input[type="text"] {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+.distance-form input[type="text"]:focus-visible {
+  outline: 3px solid rgba(79, 70, 229, 0.45);
+  outline-offset: 2px;
+}
+
+.distance-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.distance-actions .btn {
+  flex: 1;
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: inherit;
+}
+
+.btn--ghost:hover,
+.btn--ghost:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+.distance-result {
+  min-height: 1.25rem;
+  font-size: 0.9rem;
 }
 
 .map-wrapper {
