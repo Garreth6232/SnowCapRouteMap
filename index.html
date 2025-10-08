@@ -71,6 +71,18 @@
           <div class="spinner" aria-hidden="true"></div>
           <p class="loader-text">Loading map…</p>
         </div>
+        <div id="legend-container" class="legend" aria-live="polite">
+          <button
+            id="legend-toggle"
+            type="button"
+            class="legend__toggle"
+            aria-expanded="true"
+            aria-controls="route-legend"
+          >
+            Hide Legend
+          </button>
+          <div id="route-legend" class="legend__content" role="list"></div>
+        </div>
       </main>
     </div>
 
