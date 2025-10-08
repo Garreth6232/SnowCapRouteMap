@@ -30,6 +30,9 @@
   let distanceResultEl;
   let distanceClearBtn;
   let cacheStatusEl;
+  let legendContainer;
+  let legendToggleBtn;
+  let legendContent;
 
   let map;
   let mapReady = false;
@@ -38,6 +41,7 @@
 
   let geocoder;
   let infoWindow;
+  let directionsService;
 
   let distanceAutocomplete = null;
   let lastDistancePlace = null;
@@ -45,6 +49,7 @@
   let programmaticDistanceInputUpdate = false;
 
   let isDarkMode = true;
+  let cachedRouteCount = 0;
 
   const geocodeCache = new Map();
   const validatedStops = new Map();
@@ -52,12 +57,15 @@
   const routeButtons = new Map();
   const routeContainers = new Map();
   const routeData = new Map();
+  const routeRendererLookup = new Map();
+  const ROUTE_RENDERERS = [];
 
   let overallBounds = null;
   let activeRouteId = null;
 
   let distanceMarker = null;
   let distanceConnector = null;
+  let distanceLabel = null;
   let activeStopButton = null;
 
   function $(selector) {
@@ -112,11 +120,22 @@
       map.setOptions({ styles: mapStyles[normalized] });
     }
     updateInfoWindowColors();
+    updateLegendTheme(isDarkMode);
   }
 
   function toggleTheme() {
     const next = document.documentElement.getAttribute("data-theme") === LIGHT ? DARK : LIGHT;
     applyTheme(next);
+  }
+
+  function updateLegendTheme(darkMode) {
+    if (!legendContainer || !legendToggleBtn) return;
+    const bg = darkMode ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.85)";
+    const color = darkMode ? "#fff" : "#000";
+    legendContainer.style.background = bg;
+    legendContainer.style.color = color;
+    legendToggleBtn.style.background = bg;
+    legendToggleBtn.style.color = color;
   }
 
   function showMapLoader(visible) {
@@ -143,7 +162,7 @@
 
   function updateCacheStatus() {
     if (!cacheStatusEl) return;
-    cacheStatusEl.textContent = "Static routes ready";
+    cacheStatusEl.textContent = `Cached Routes: ${Math.min(cachedRouteCount, ROUTES.length)}/${ROUTES.length}`;
   }
 
   function collapseAllRoutes(exceptId = null) {
@@ -199,6 +218,13 @@
       button.className = "route-toggle";
       button.dataset.routeId = route.id;
       button.setAttribute("aria-expanded", "false");
+
+      const handleHover = () => highlightRouteByName(route.name);
+      const handleLeave = () => resetHighlight();
+      button.addEventListener("mouseenter", handleHover);
+      button.addEventListener("focus", handleHover);
+      button.addEventListener("mouseleave", handleLeave);
+      button.addEventListener("blur", handleLeave);
 
       const badge = document.createElement("span");
       badge.className = "route-badge";
@@ -289,6 +315,58 @@
     });
   }
 
+  function setLegendCollapsed(collapsed) {
+    if (!legendContainer || !legendToggleBtn || !legendContent) return;
+    legendContainer.dataset.collapsed = collapsed ? "true" : "false";
+    legendToggleBtn.textContent = collapsed ? "Show Legend" : "Hide Legend";
+    legendToggleBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    legendContent.setAttribute("aria-hidden", collapsed ? "true" : "false");
+  }
+
+  function toggleLegend() {
+    if (!legendContainer) return;
+    const collapsed = legendContainer.dataset.collapsed === "true";
+    setLegendCollapsed(!collapsed);
+    if (legendContainer.dataset.collapsed === "true") {
+      resetHighlight();
+    }
+  }
+
+  function buildLegend() {
+    if (!legendContent) return;
+    legendContent.innerHTML = "";
+    ROUTES.forEach((route) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "legend__item";
+      item.dataset.routeId = route.id;
+      item.setAttribute("role", "listitem");
+
+      const swatch = document.createElement("span");
+      swatch.className = "legend__swatch";
+      swatch.style.background = route.color;
+
+      const label = document.createElement("span");
+      label.textContent = route.name;
+
+      item.appendChild(swatch);
+      item.appendChild(label);
+
+      item.addEventListener("click", () => {
+        focusRoute(route.id);
+      });
+      item.addEventListener("mouseenter", () => highlightRouteByName(route.name));
+      item.addEventListener("focus", () => highlightRouteByName(route.name));
+      item.addEventListener("mouseleave", () => resetHighlight());
+      item.addEventListener("blur", () => resetHighlight());
+
+      legendContent.appendChild(item);
+    });
+
+    updateLegendTheme(isDarkMode);
+    setLegendCollapsed(false);
+  }
+
   function updateRouteLength(routeId, stopsCount, miles) {
     const entry = routeContainers.get(routeId);
     if (!entry) return;
@@ -327,6 +405,10 @@
       distanceConnector.setMap(null);
       distanceConnector = null;
     }
+    if (distanceLabel) {
+      distanceLabel.close();
+      distanceLabel = null;
+    }
   }
 
   function clearDistanceUI() {
@@ -338,6 +420,12 @@
     }
     resetDistanceOverlays();
     storeDistancePlace(null);
+  }
+
+  function delay(ms) {
+    return new Promise((resolve) => {
+      window.setTimeout(resolve, ms);
+    });
   }
 
   function generateCurvedPath(start, end) {
@@ -379,18 +467,31 @@
     activeRouteId = null;
     setActiveState(null);
     routeData.forEach((data) => {
-      if (data.polyline) {
-        data.polyline.setOptions(data.basePolylineOptions);
-        data.polyline.setMap(map);
+      if (data.renderer) {
+        data.renderer.setMap(map);
+        data.renderer.setOptions({ polylineOptions: data.basePolylineOptions });
       }
       data.markers.forEach((marker) => marker.setMap(map));
     });
+    resetHighlight();
     if (overallBounds && !overallBounds.isEmpty()) {
-      map.fitBounds(overallBounds, 48);
+      const center = overallBounds.getCenter();
+      smoothFocus(center, DEFAULT_ZOOM);
+      window.setTimeout(() => {
+        map.fitBounds(overallBounds, 48);
+      }, 240);
     } else {
       map.setCenter(MAP_CENTER);
       map.setZoom(DEFAULT_ZOOM);
     }
+  }
+
+  function smoothFocus(location, zoom = 14) {
+    if (!map || !location) return;
+    map.panTo(location);
+    window.setTimeout(() => {
+      map.setZoom(zoom);
+    }, 200);
   }
 
   function focusRoute(routeId) {
@@ -400,16 +501,22 @@
     setActiveState(routeId);
 
     routeData.forEach((entry, id) => {
-      if (entry.polyline) {
-        entry.polyline.setMap(id === routeId ? map : null);
+      if (entry.renderer) {
+        entry.renderer.setMap(id === routeId ? map : null);
       }
       entry.markers.forEach((marker) => {
         marker.setMap(id === routeId ? map : null);
       });
     });
 
+    resetHighlight();
+
     if (data.bounds) {
-      map.fitBounds(data.bounds, 48);
+      const center = data.bounds.getCenter();
+      smoothFocus(center, Math.max(Math.round(map.getZoom()), data.preferredZoom));
+      window.setTimeout(() => {
+        map.fitBounds(data.bounds, 48);
+      }, 240);
     }
   }
 
@@ -449,29 +556,42 @@
     windowInstance.setContent(content);
     windowInstance.open({ map, anchor: marker });
     updateInfoWindowColors();
-    map.panTo(marker.getPosition());
+    smoothFocus(marker.getPosition(), Math.max(map.getZoom(), 16));
   }
 
-  function highlightRoute(routeId, duration = HIGHLIGHT_DURATION) {
-    const data = routeData.get(routeId);
-    if (!data || !data.polyline) return;
-    data.polyline.setOptions({
-      ...data.basePolylineOptions,
-      strokeWeight: 6,
-      strokeOpacity: 1,
-      zIndex: 50
+  function applyHighlightState(activeName = null) {
+    ROUTE_RENDERERS.forEach((entry) => {
+      const isActive = activeName && entry.name === activeName;
+      const options = isActive
+        ? { polylineOptions: { ...entry.basePolylineOptions, strokeWeight: 6, strokeOpacity: 1 } }
+        : activeName
+        ? { polylineOptions: { ...entry.basePolylineOptions, strokeOpacity: 0.4 } }
+        : { polylineOptions: entry.basePolylineOptions };
+      entry.renderer.setOptions(options);
     });
-    if (data.highlightTimeout) {
-      window.clearTimeout(data.highlightTimeout);
+  }
+
+  function highlightRouteByName(routeName) {
+    if (!ROUTE_RENDERERS.some((entry) => entry.name === routeName)) {
+      return;
     }
-    data.highlightTimeout = window.setTimeout(() => {
-      if (data.polyline) {
-        data.polyline.setOptions(data.basePolylineOptions);
-      }
+    applyHighlightState(routeName);
+  }
+
+  function resetHighlight() {
+    applyHighlightState(null);
+  }
+
+  function emphasizeRoute(routeId, duration = HIGHLIGHT_DURATION) {
+    const entry = routeRendererLookup.get(routeId);
+    if (!entry) return;
+    applyHighlightState(entry.name);
+    window.setTimeout(() => {
+      resetHighlight();
     }, duration);
   }
 
-  function drawDistanceConnector(targetLatLng, nearestLatLng) {
+  function drawDistanceConnector(targetLatLng, nearestLatLng, routeName, distanceMiles) {
     resetDistanceOverlays();
 
     distanceMarker = new google.maps.Marker({
@@ -513,6 +633,39 @@
         geodesic: true,
         zIndex: 999
       });
+      if (routeName && Number.isFinite(distanceMiles)) {
+        const connectorPath = distanceConnector.getPath();
+        if (connectorPath && connectorPath.getLength() > 0) {
+          const midPoint = connectorPath.getAt(Math.floor(connectorPath.getLength() / 2));
+          if (midPoint) {
+            const content = document.createElement("div");
+            content.style.background = "#fff";
+            content.style.padding = "6px 10px";
+            content.style.borderRadius = "6px";
+            content.style.fontSize = "0.8rem";
+            content.style.color = "#000";
+            content.style.boxShadow = "0 0 4px rgba(0,0,0,0.3)";
+
+            const routeRow = document.createElement("div");
+            routeRow.textContent = "Closest Route: ";
+            const routeStrong = document.createElement("strong");
+            routeStrong.textContent = routeName;
+            routeRow.appendChild(routeStrong);
+
+            const distanceRow = document.createElement("div");
+            distanceRow.textContent = `Distance: ${distanceMiles.toFixed(2)} mi`;
+
+            content.appendChild(routeRow);
+            content.appendChild(distanceRow);
+
+            distanceLabel = new google.maps.InfoWindow({
+              position: midPoint,
+              content
+            });
+            distanceLabel.open(map);
+          }
+        }
+      }
     }
   }
 
@@ -556,26 +709,12 @@
     geocodeCache.set(address, promise);
     return promise;
   }
-  function normalizeCoordinate(value) {
-    if (!Array.isArray(value) || value.length < 2) return null;
-    const [lat, lng] = value;
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      return null;
-    }
-    return { lat, lng };
-  }
-
   function validateRoutes() {
     ROUTES.forEach((route) => {
-      const coordinates = Array.isArray(route.coordinates) ? route.coordinates : [];
       const stops = route.addresses.map((address, index) => {
-        const location = normalizeCoordinate(coordinates[index]);
-        if (!location) {
-          console.warn(`Missing coordinates for stop ${index + 1} on ${route.name}`);
-        }
         return {
           address,
-          location,
+          location: null,
           formatted: null,
           originalIndex: index
         };
@@ -594,38 +733,32 @@
     }
   }
 
-  function getAvailableStops(routeId) {
-    const stops = validatedStops.get(routeId);
-    if (!stops) return [];
-    return stops
-      .filter((stop) => !!stop.location)
-      .map((stop) => ({
-        address: stop.address,
-        location: stop.location,
-        formatted: stop.formatted,
-        originalIndex: stop.originalIndex
-      }));
-  }
-
-  function buildRoutePath(route) {
-    if (!route || !Array.isArray(route.coordinates)) return [];
-    return route.coordinates.map(normalizeCoordinate).filter(Boolean);
-  }
-
-  function renderRoute(route) {
-    const existing = routeData.get(route.id);
-    if (existing) {
-      if (existing.highlightTimeout) {
-        window.clearTimeout(existing.highlightTimeout);
-      }
-      existing.markers.forEach((marker) => marker.setMap(null));
-      if (existing.polyline) {
-        existing.polyline.setMap(null);
-      }
+  function cleanupRoute(routeId) {
+    const existing = routeData.get(routeId);
+    if (!existing) return;
+    existing.markers.forEach((marker) => marker.setMap(null));
+    if (existing.renderer) {
+      existing.renderer.setMap(null);
     }
+    if (routeRendererLookup.has(routeId)) {
+      const entry = routeRendererLookup.get(routeId);
+      const index = ROUTE_RENDERERS.indexOf(entry);
+      if (index !== -1) {
+        ROUTE_RENDERERS.splice(index, 1);
+      }
+      routeRendererLookup.delete(routeId);
+    }
+    routeData.delete(routeId);
+  }
 
-    const availableStops = getAvailableStops(route.id);
-    const path = buildRoutePath(route);
+  function registerRouteRenderer(route, renderer, basePolylineOptions) {
+    const entry = { id: route.id, name: route.name, renderer, basePolylineOptions };
+    routeRendererLookup.set(route.id, entry);
+    ROUTE_RENDERERS.push(entry);
+  }
+
+  async function renderRoute(route) {
+    cleanupRoute(route.id);
 
     const basePolylineOptions = {
       strokeColor: route.color,
@@ -633,69 +766,181 @@
       strokeOpacity: 0.9
     };
 
-    const markers = availableStops.map((stop) =>
-      createMarker(stop.location, route.color, stop.address, () => openStopInfo(route.id, stop.originalIndex))
-    );
+    const storedStops = validatedStops.get(route.id) || [];
+    const stops = route.addresses.map((address, index) => ({
+      address,
+      formatted: storedStops[index]?.formatted || null,
+      location: null,
+      originalIndex: index
+    }));
 
-    const polyline =
-      path.length >= 2
-        ? new google.maps.Polyline({
-            path,
-            ...basePolylineOptions,
-            map
-          })
-        : null;
+    let renderer = null;
+    let turfLine = null;
+    let miles = null;
+
+    const updateStopFromLatLng = (stopIndex, latLng, formatted) => {
+      if (!stops[stopIndex] || !latLng) return;
+      const resolved = typeof latLng.lat === "function" ? { lat: latLng.lat(), lng: latLng.lng() } : latLng;
+      if (!resolved || !Number.isFinite(resolved.lat) || !Number.isFinite(resolved.lng)) return;
+      stops[stopIndex].location = resolved;
+      if (formatted) {
+        stops[stopIndex].formatted = formatted;
+      }
+    };
+
+    const ensureMarkers = () =>
+      stops
+        .filter((stop) => !!stop.location)
+        .map((stop) =>
+          createMarker(stop.location, route.color, stop.address, () => openStopInfo(route.id, stop.originalIndex))
+        );
 
     const bounds = new google.maps.LatLngBounds();
-    path.forEach((point) => bounds.extend(point));
+
+    const processDirectionsResult = (result) => {
+      if (!result || !Array.isArray(result.routes) || !result.routes[0]) return false;
+      const gmRoute = result.routes[0];
+      const legs = gmRoute.legs || [];
+      legs.forEach((leg, index) => {
+        if (index === 0) {
+          updateStopFromLatLng(0, leg.start_location, leg.start_address);
+        }
+        updateStopFromLatLng(index + 1, leg.end_location, leg.end_address);
+      });
+
+      const overviewPath = gmRoute.overview_path || [];
+      const lineString = [];
+      overviewPath.forEach((point) => {
+        const lat = point.lat();
+        const lng = point.lng();
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          bounds.extend({ lat, lng });
+          lineString.push([lng, lat]);
+        }
+      });
+
+      if (gmRoute.bounds) {
+        bounds.extend(gmRoute.bounds.getSouthWest());
+        bounds.extend(gmRoute.bounds.getNorthEast());
+      }
+
+      if (lineString.length >= 2 && typeof turf !== "undefined" && typeof turf.lineString === "function") {
+        turfLine = turf.lineString(lineString);
+      }
+
+      if (legs.length) {
+        const meters = legs.reduce((sum, leg) => sum + (leg.distance?.value || 0), 0);
+        const milesValue = meters / 1609.344;
+        miles = Number.isFinite(milesValue) && milesValue > 0 ? milesValue : null;
+      }
+
+      renderer = new google.maps.DirectionsRenderer({
+        suppressMarkers: true,
+        preserveViewport: true,
+        polylineOptions: basePolylineOptions
+      });
+      renderer.setDirections(result);
+      renderer.setMap(map);
+      registerRouteRenderer(route, renderer, basePolylineOptions);
+      return true;
+    };
+
+    if (directionsService && route.addresses.length >= 2) {
+      const request = {
+        origin: route.addresses[0],
+        destination: route.addresses[route.addresses.length - 1],
+        waypoints: route.addresses.slice(1, -1).map((address) => ({ location: address, stopover: true })),
+        travelMode: google.maps.TravelMode.DRIVING
+      };
+
+      const result = await new Promise((resolve) => {
+        directionsService.route(request, (response, status) => {
+          if (status === "OK") {
+            resolve(response);
+          } else {
+            console.warn(`⚠️ Route ${route.name} failed:`, status);
+            resolve(null);
+          }
+        });
+      });
+
+      if (!processDirectionsResult(result)) {
+        renderer = null;
+      }
+    }
+
+    if (!renderer) {
+      await Promise.all(
+        stops.map(async (stop, index) => {
+          const { result } = await geocodeAddress(stop.address);
+          if (result) {
+            updateStopFromLatLng(index, result.geometry.location, result.formatted_address);
+          }
+        })
+      );
+    }
+
+    const markers = ensureMarkers();
     markers.forEach((marker) => {
       const position = marker.getPosition();
       if (position) {
         bounds.extend(position);
       }
     });
+
+    if (!turfLine) {
+      const fallbackLine = stops
+        .filter((stop) => stop.location)
+        .map((stop) => [stop.location.lng, stop.location.lat]);
+      if (fallbackLine.length >= 2 && typeof turf !== "undefined" && typeof turf.lineString === "function") {
+        turfLine = turf.lineString(fallbackLine);
+        if (!miles && typeof turf.length === "function") {
+          const length = turf.length(turfLine, { units: "miles" });
+          miles = Number.isFinite(length) && length > 0 ? length : miles;
+        }
+      }
+    }
+
     const finalBounds = typeof bounds.isEmpty === "function" && !bounds.isEmpty() ? bounds : null;
     if (finalBounds) {
       extendOverallBounds(finalBounds);
     }
 
-    const lineString = path.map((point) => [point.lng, point.lat]);
-    const turfLine =
-      lineString.length >= 2 && typeof turf !== "undefined" && typeof turf.lineString === "function"
-        ? turf.lineString(lineString)
-        : null;
-    const miles =
-      turfLine && typeof turf.length === "function"
-        ? (() => {
-            const length = turf.length(turfLine, { units: "miles" });
-            return Number.isFinite(length) ? length : null;
-          })()
-        : null;
+    validatedStops.set(route.id, stops);
+
+    const preferredZoom = route.addresses.length > 4 ? 13 : route.addresses.length > 2 ? 14 : 15;
 
     routeData.set(route.id, {
-      polyline,
+      renderer,
       basePolylineOptions,
       markers,
       bounds: finalBounds,
       turfLine,
-      stops: availableStops,
+      stops,
       color: route.color,
-      highlightTimeout: null
+      preferredZoom
     });
 
-    updateRouteLength(route.id, availableStops.length, miles);
+    cachedRouteCount += 1;
+    updateRouteLength(route.id, route.addresses.length, miles);
     updateCacheStatus();
   }
 
-  function renderAllRoutes() {
+  async function renderAllRoutes() {
     overallBounds = null;
-    ROUTES.forEach((route) => {
-      renderRoute(route);
-    });
-    console.log("✅ Static routes loaded instantly with distinct colors and improved visibility");
-    if (overallBounds && !overallBounds.isEmpty()) {
-      map.fitBounds(overallBounds, 48);
+    cachedRouteCount = 0;
+    updateCacheStatus();
+
+    for (let i = 0; i < ROUTES.length; i += 1) {
+      const route = ROUTES[i];
+      if (i > 0) {
+        await delay(220);
+      }
+      await renderRoute(route);
     }
+
+    console.log("✅ Dynamic routing restored with legend, highlight, label, and smooth zoom features active");
+
   }
 
   async function handleDistanceCheck(event, selectedPlace = null) {
@@ -776,12 +1021,12 @@
       return;
     }
 
-    distanceResultEl.textContent = `Closest route: ${
-      ROUTES.find((route) => route.id === bestRouteId)?.name || bestRouteId
-    } · ${bestDistance.toFixed(2)} miles away.`;
+    const closestRoute = ROUTES.find((route) => route.id === bestRouteId);
+    const closestName = closestRoute?.name || bestRouteId;
+    distanceResultEl.textContent = `Closest route: ${closestName} · ${bestDistance.toFixed(2)} miles away.`;
 
-    drawDistanceConnector(location, nearestPoint);
-    highlightRoute(bestRouteId);
+    drawDistanceConnector(location, nearestPoint, closestName, bestDistance);
+    emphasizeRoute(bestRouteId);
     focusRoute(bestRouteId);
   }
 
@@ -820,6 +1065,9 @@
         collapseAllRoutes(null);
         showAllRoutes();
       });
+    }
+    if (legendToggleBtn) {
+      legendToggleBtn.addEventListener("click", toggleLegend);
     }
     if (distanceForm) {
       distanceForm.addEventListener("submit", handleDistanceCheck);
@@ -862,15 +1110,22 @@
     });
 
     window.map = map;
+    window.ROUTE_RENDERERS = ROUTE_RENDERERS;
 
     geocoder = new google.maps.Geocoder();
     infoWindow = new google.maps.InfoWindow();
+    directionsService = new google.maps.DirectionsService();
 
     setupDistanceAutocomplete();
 
     validateRoutes();
-    renderAllRoutes();
-    showAllRoutes();
+    renderAllRoutes()
+      .then(() => {
+        showAllRoutes();
+      })
+      .catch((error) => {
+        console.error("Failed to render all routes", error);
+      });
 
     window.setTimeout(() => {
       showMapLoader(false);
@@ -892,9 +1147,13 @@
     distanceResultEl = $("#distance-result");
     distanceClearBtn = $("#distance-clear");
     cacheStatusEl = $("#cache-status");
+    legendContainer = $("#legend-container");
+    legendToggleBtn = $("#legend-toggle");
+    legendContent = $("#route-legend");
 
     applyTheme(getStoredTheme(), false);
     buildRouteList();
+    buildLegend();
     updateSummary();
     updateCacheStatus();
     bindUI();
