@@ -5,6 +5,7 @@
   const DARK = "dark";
   const LIGHT = "light";
   const HIGHLIGHT_DURATION = 2600;
+  const HOUSE_ADDRESS = "17805 SE Stark St, Portland, OR 97233";
 
   const mapStyles = {
     dark: [
@@ -68,6 +69,7 @@
   let distanceConnector = null;
   let distanceLabel = null;
   let activeStopButton = null;
+  let houseMarker = null;
 
   function $(selector) {
     return document.querySelector(selector);
@@ -670,6 +672,40 @@
     }
   }
 
+
+  async function addHouseEmojiMarker() {
+    if (!map) return;
+
+    if (houseMarker) {
+      houseMarker.setMap(null);
+      houseMarker = null;
+    }
+
+    const { result } = await geocodeAddress(HOUSE_ADDRESS);
+    const location = toLatLngLiteral(result);
+    if (!location) {
+      console.warn("Unable to place house marker.");
+      return;
+    }
+
+    houseMarker = new google.maps.Marker({
+      position: location,
+      map,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 0,
+        fillOpacity: 0,
+        strokeOpacity: 0
+      },
+      label: {
+        text: "🏠",
+        fontSize: "28px"
+      },
+      title: HOUSE_ADDRESS,
+      zIndex: 1500
+    });
+  }
+
   function createMarker(position, color, title, onClick) {
     const marker = new google.maps.Marker({
       position,
@@ -1128,6 +1164,7 @@
     renderAllRoutes()
       .then(() => {
         showAllRoutes();
+        addHouseEmojiMarker();
       })
       .catch((error) => {
         console.error("Failed to render all routes", error);
