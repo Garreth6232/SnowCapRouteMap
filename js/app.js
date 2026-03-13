@@ -6,6 +6,10 @@
   const LIGHT = "light";
   const HIGHLIGHT_DURATION = 2600;
   const HOUSE_ADDRESS = "17805 SE Stark St.\nPortland, OR 97233";
+  const SPRING_DECORATION_ASSETS = ["egg1", "tulip1", "tulip2", "flower1", "poppy1", "lily1"];
+  const SPRING_DECORATION_COUNT = 18;
+  const EASTER_EGG_COUNT = 3;
+  const EASTER_EGG_MESSAGE = "You found an easter egg! I couldn't figure out a reward so I will wish you a happy day";
 
   const mapStyles = {
     dark: [
@@ -70,6 +74,8 @@
   let distanceLabel = null;
   let activeStopButton = null;
   let houseMarker = null;
+  const springMarkers = [];
+  const easterEggMarkers = [];
 
   function $(selector) {
     return document.querySelector(selector);
@@ -727,6 +733,78 @@
     return marker;
   }
 
+  function randomInRange(min, max) {
+    return min + Math.random() * (max - min);
+  }
+
+  function getBoundsPoint(bounds) {
+    const northEast = bounds.getNorthEast();
+    const southWest = bounds.getSouthWest();
+    const lat = randomInRange(southWest.lat(), northEast.lat());
+    const lng = randomInRange(southWest.lng(), northEast.lng());
+    return { lat, lng };
+  }
+
+  function buildAlternatingDecorationList(totalCount) {
+    const icons = [];
+    let previous = null;
+    for (let i = 0; i < totalCount; i += 1) {
+      const candidates = SPRING_DECORATION_ASSETS.filter((name) => name !== previous);
+      const next = candidates[Math.floor(Math.random() * candidates.length)] || SPRING_DECORATION_ASSETS[0];
+      icons.push(next);
+      previous = next;
+    }
+    return icons;
+  }
+
+  function clearSeasonalMarkers(markers) {
+    markers.forEach((marker) => marker.setMap(null));
+    markers.length = 0;
+  }
+
+  function addSpringDecorations() {
+    if (!map || !overallBounds) return;
+    clearSeasonalMarkers(springMarkers);
+
+    const iconList = buildAlternatingDecorationList(SPRING_DECORATION_COUNT);
+    iconList.forEach((iconName) => {
+      const marker = new google.maps.Marker({
+        position: getBoundsPoint(overallBounds),
+        map,
+        icon: {
+          url: `./assets/${iconName}.png`,
+          scaledSize: new google.maps.Size(34, 34)
+        },
+        clickable: false,
+        optimized: true,
+        zIndex: 40
+      });
+      springMarkers.push(marker);
+    });
+  }
+
+  function addEasterEggMarkers() {
+    if (!map || !overallBounds) return;
+    clearSeasonalMarkers(easterEggMarkers);
+
+    for (let i = 0; i < EASTER_EGG_COUNT; i += 1) {
+      const marker = new google.maps.Marker({
+        position: getBoundsPoint(overallBounds),
+        map,
+        icon: {
+          url: "./assets/easteregg1.png",
+          scaledSize: new google.maps.Size(36, 36)
+        },
+        title: "Easter egg",
+        zIndex: 80
+      });
+      marker.addListener("click", () => {
+        window.alert(EASTER_EGG_MESSAGE);
+      });
+      easterEggMarkers.push(marker);
+    }
+  }
+
   async function geocodeAddress(address) {
     if (!geocoder) {
       return { status: "NO_GEOCODER", result: null };
@@ -975,6 +1053,9 @@
       }
       await renderRoute(route);
     }
+
+    addSpringDecorations();
+    addEasterEggMarkers();
 
     console.log("✅ Dynamic routing restored with legend, highlight, label, and smooth zoom features active");
 
@@ -1236,6 +1317,12 @@
     }
     if (readyToInitialize()) {
       initializeMap();
+    }
+    if (map && typeof google !== "undefined" && google.maps) {
+      window.setTimeout(() => {
+        google.maps.event.trigger(map, "resize");
+        showAllRoutes();
+      }, 360);
     }
   });
 
