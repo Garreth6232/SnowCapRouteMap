@@ -661,8 +661,8 @@ button {
   z-index: 3;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
-  padding: 0.35rem 0.75rem;
-  font-size: 0.76rem;
+  padding: 0.42rem 0.86rem;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.01em;
   color: #eef1ff;
@@ -670,6 +670,17 @@ button {
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  animation: edith-breathe 2.8s ease-in-out infinite;
+}
+
+@keyframes edith-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
 }
 
 .edith-button:hover,

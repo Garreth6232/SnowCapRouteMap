@@ -5,7 +5,7 @@
   const DARK = "dark";
   const LIGHT = "light";
   const HIGHLIGHT_DURATION = 2600;
-  const HOUSE_ADDRESS = "17805 SE Stark St, Portland, OR 97233";
+  const HOUSE_ADDRESS = "17805 SE Stark St.\nPortland, OR 97233";
 
   const mapStyles = {
     dark: [
@@ -1129,8 +1129,34 @@
     }
     if (edithButton) {
       edithButton.addEventListener("click", () => {
+        launchEdithConfetti();
         window.alert("Hi Edith I Hope work is good! ❤️");
       });
+    }
+  }
+
+  function launchEdithConfetti() {
+    if (!edithButton) return;
+
+    const colors = ["#ffd6e7", "#f9e79f", "#c7f9cc", "#cfe8ff", "#e9d5ff", "#ffc6ff"];
+    const burstCount = 170;
+    const rect = edithButton.getBoundingClientRect();
+
+    for (let i = 0; i < burstCount; i += 1) {
+      const piece = document.createElement("span");
+      piece.className = "confetti-piece";
+      piece.style.position = "fixed";
+      piece.style.left = `${rect.left + rect.width / 2 + (Math.random() * 220 - 110)}px`;
+      piece.style.top = `${Math.max(rect.top - 20, 0)}px`;
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.animationDelay = `${Math.random() * 0.15}s`;
+      piece.style.animationDuration = `${2.4 + Math.random() * 1.8}s`;
+      piece.style.setProperty("--drift", String(Math.random()));
+      document.body.appendChild(piece);
+
+      window.setTimeout(() => {
+        piece.remove();
+      }, 4300);
     }
   }
 
