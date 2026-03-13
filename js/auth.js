@@ -2,8 +2,6 @@
   const LOCK_ID = "lock";
   const APP_ID = "app";
   const FORM_ID = "lock-form";
-  const PASSWORD_ID = "lock-password";
-  const ERROR_ID = "lock-error";
   const UNLOCK_KEY = "scrm-unlocked";
   const TRANSITION_DELAY = 320;
 
@@ -11,20 +9,8 @@
     return {
       lock: document.getElementById(LOCK_ID),
       app: document.getElementById(APP_ID),
-      form: document.getElementById(FORM_ID),
-      password: document.getElementById(PASSWORD_ID),
-      error: document.getElementById(ERROR_ID)
+      form: document.getElementById(FORM_ID)
     };
-  }
-
-  function showError(el, message) {
-    if (!el) return;
-    el.textContent = message;
-  }
-
-  function clearError(el) {
-    if (!el) return;
-    el.textContent = "";
   }
 
   function toggleAppVisibility(lock, app, unlocked) {
@@ -41,19 +27,43 @@
     }
   }
 
+  function launchConfetti() {
+    const lock = document.getElementById(LOCK_ID);
+    if (!lock) return;
+
+    const colors = ["#ffd6e7", "#f9e79f", "#c7f9cc", "#cfe8ff", "#e9d5ff"];
+    const count = 90;
+
+    for (let i = 0; i < count; i += 1) {
+      const piece = document.createElement("span");
+      piece.className = "confetti-piece";
+      piece.style.left = `${Math.random() * 100}%`;
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.animationDelay = `${Math.random() * 0.2}s`;
+      piece.style.animationDuration = `${1.8 + Math.random() * 1.4}s`;
+      piece.style.setProperty("--drift", String(Math.random()));
+      lock.appendChild(piece);
+
+      window.setTimeout(() => {
+        piece.remove();
+      }, 3400);
+    }
+  }
+
   function handleUnlock(elementsMap) {
     const { lock, app } = elementsMap;
-    toggleAppVisibility(lock, app, true);
+    launchConfetti();
     window.setTimeout(() => {
+      toggleAppVisibility(lock, app, true);
       document.dispatchEvent(new CustomEvent("auth:granted"));
     }, TRANSITION_DELAY);
   }
 
   document.addEventListener("DOMContentLoaded", () => {
     const els = elements();
-    const { form, password, error, lock, app } = els;
+    const { form, lock, app } = els;
 
-    if (!form || !password || !lock || !app) {
+    if (!form || !lock || !app) {
       console.warn("Lock screen elements missing. Initialization skipped.");
       return;
     }
@@ -69,28 +79,8 @@
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
-      if (!password.value.trim()) {
-        showError(error, "Enter the access code.");
-        password.focus();
-        return;
-      }
-
-      if (typeof PUBLIC_PASSWORD !== "string" || !PUBLIC_PASSWORD) {
-        showError(error, "Access code is not configured.");
-        return;
-      }
-
-      if (password.value.trim() !== PUBLIC_PASSWORD) {
-        showError(error, "Incorrect code. Try again.");
-        password.select();
-        return;
-      }
-
-      clearError(error);
       sessionStorage.setItem(UNLOCK_KEY, "1");
       handleUnlock(els);
     });
-
-    password.addEventListener("input", () => clearError(error));
   });
 })();
