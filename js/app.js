@@ -34,6 +34,7 @@
   let distanceForm;
   let distanceInput;
   let distanceResultEl;
+  let distanceLastRouteEl;
   let distanceClearBtn;
   let distanceNextRouteBtn;
   let cacheStatusEl;
@@ -419,6 +420,9 @@
       distanceNextRouteBtn.hidden = true;
       distanceNextRouteBtn.disabled = true;
     }
+    if (distanceLastRouteEl) {
+      distanceLastRouteEl.textContent = "";
+    }
   }
 
   function updateNextClosestRouteButton() {
@@ -426,6 +430,18 @@
     const hasAnother = activeClosestRouteIndex >= 0 && activeClosestRouteIndex < closestRouteMatches.length - 1;
     distanceNextRouteBtn.hidden = closestRouteMatches.length <= 1;
     distanceNextRouteBtn.disabled = !hasAnother;
+  }
+
+
+  function updateLastRouteText(index) {
+    if (!distanceLastRouteEl) return;
+    if (index <= 0 || !closestRouteMatches[index - 1]) {
+      distanceLastRouteEl.textContent = "";
+      return;
+    }
+
+    const previousMatch = closestRouteMatches[index - 1];
+    distanceLastRouteEl.textContent = `Last route: ${previousMatch.name} · ${previousMatch.distance.toFixed(2)} miles away.`;
   }
 
   function showClosestRouteMatch(index) {
@@ -439,6 +455,7 @@
     const rankLabel = rankLabels[index] || `${rank}th closest`;
 
     distanceResultEl.textContent = `${rankLabel} route: ${match.name} · ${match.distance.toFixed(2)} miles away.`;
+    updateLastRouteText(index);
 
     drawDistanceConnector(activeDistanceLocation, match.nearestPoint, match.name, match.distance);
     emphasizeRoute(match.routeId);
@@ -464,6 +481,9 @@
   function clearDistanceUI() {
     if (distanceResultEl) {
       distanceResultEl.textContent = "";
+    }
+    if (distanceLastRouteEl) {
+      distanceLastRouteEl.textContent = "";
     }
     if (distanceInput) {
       distanceInput.value = "";
@@ -1296,6 +1316,9 @@
           if (distanceResultEl && !currentValue) {
             distanceResultEl.textContent = "";
           }
+          if (distanceLastRouteEl && !currentValue) {
+            distanceLastRouteEl.textContent = "";
+          }
         }
       });
     }
@@ -1391,6 +1414,7 @@
     distanceForm = $("#distance-form");
     distanceInput = $("#distance-address");
     distanceResultEl = $("#distance-result");
+    distanceLastRouteEl = $("#distance-last-route");
     distanceClearBtn = $("#distance-clear");
     distanceNextRouteBtn = $("#distance-next-route");
     cacheStatusEl = $("#cache-status");

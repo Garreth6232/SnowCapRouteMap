@@ -616,6 +616,10 @@ button {
   font-size: 0.9rem;
 }
 
+.distance-result--last {
+  color: var(--color-muted);
+}
+
 .map-wrapper {
   flex: 1;
   position: relative;
