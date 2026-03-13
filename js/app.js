@@ -6,9 +6,10 @@
   const LIGHT = "light";
   const HIGHLIGHT_DURATION = 2600;
   const HOUSE_ADDRESS = "17805 SE Stark St.\nPortland, OR 97233";
-  const SPRING_DECORATION_ASSETS = ["egg1", "tulip1", "tulip2", "flower1", "poppy1", "lily1"];
-  const SPRING_DECORATION_COUNT = 18;
-  const EASTER_EGG_COUNT = 3;
+  const SPRING_DECORATION_ASSETS = ["tulip1", "tulip2", "flower1", "poppy1", "lily1"];
+  const SPRING_DECORATION_COUNT = 34;
+  const EASTER_EGG_COUNT = 1;
+  const DECORATION_ROUTE_BUFFER_MILES = 0.25;
   const EASTER_EGG_MESSAGE = "You found an easter egg! I couldn't figure out a reward so I will wish you a happy day";
 
   const mapStyles = {
@@ -744,6 +745,32 @@
     const lng = randomInRange(southWest.lng(), northEast.lng());
     return { lat, lng };
   }
+  function isPointNearRouteLine(position, routeLines, minDistanceMiles) {
+    if (!position || !Array.isArray(routeLines) || !routeLines.length || typeof turf === "undefined") {
+      return false;
+    }
+    if (typeof turf.point !== "function" || typeof turf.pointToLineDistance !== "function") {
+      return false;
+    }
+
+    const point = turf.point([position.lng, position.lat]);
+    return routeLines.some((line) => {
+      if (!line) return false;
+      const distance = turf.pointToLineDistance(point, line, { units: "miles" });
+      return Number.isFinite(distance) && distance < minDistanceMiles;
+    });
+  }
+
+  function getValidDecorationPoint(bounds, routeLines, minDistanceMiles) {
+    const maxAttempts = 80;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const candidate = getBoundsPoint(bounds);
+      if (!isPointNearRouteLine(candidate, routeLines, minDistanceMiles)) {
+        return candidate;
+      }
+    }
+    return getBoundsPoint(bounds);
+  }
 
   function buildAlternatingDecorationList(totalCount) {
     const icons = [];
@@ -766,10 +793,14 @@
     if (!map || !overallBounds) return;
     clearSeasonalMarkers(springMarkers);
 
+    const routeLines = Array.from(routeData.values())
+      .map((entry) => entry.turfLine)
+      .filter(Boolean);
     const iconList = buildAlternatingDecorationList(SPRING_DECORATION_COUNT);
+
     iconList.forEach((iconName) => {
       const marker = new google.maps.Marker({
-        position: getBoundsPoint(overallBounds),
+        position: getValidDecorationPoint(overallBounds, routeLines, DECORATION_ROUTE_BUFFER_MILES),
         map,
         icon: {
           url: `./assets/${iconName}.png`,
@@ -787,9 +818,13 @@
     if (!map || !overallBounds) return;
     clearSeasonalMarkers(easterEggMarkers);
 
+    const routeLines = Array.from(routeData.values())
+      .map((entry) => entry.turfLine)
+      .filter(Boolean);
+
     for (let i = 0; i < EASTER_EGG_COUNT; i += 1) {
       const marker = new google.maps.Marker({
-        position: getBoundsPoint(overallBounds),
+        position: getValidDecorationPoint(overallBounds, routeLines, DECORATION_ROUTE_BUFFER_MILES),
         map,
         icon: {
           url: "./assets/easteregg1.png",
@@ -1219,8 +1254,7 @@
   function launchEdithConfetti() {
     if (!edithButton) return;
 
-    const colors = ["#ffd6e7", "#f9e79f", "#c7f9cc", "#cfe8ff", "#e9d5ff", "#ffc6ff"];
-    const burstCount = 170;
+    const burstCount = 110;
     const rect = edithButton.getBoundingClientRect();
 
     for (let i = 0; i < burstCount; i += 1) {
@@ -1229,9 +1263,15 @@
       piece.style.position = "fixed";
       piece.style.left = `${rect.left + rect.width / 2 + (Math.random() * 220 - 110)}px`;
       piece.style.top = `${Math.max(rect.top - 20, 0)}px`;
-      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
-      piece.style.animationDelay = `${Math.random() * 0.15}s`;
-      piece.style.animationDuration = `${2.4 + Math.random() * 1.8}s`;
+      piece.style.background = "transparent";
+      piece.style.backgroundImage = "url('./assets/easteregg1.png')";
+      piece.style.backgroundSize = "cover";
+      piece.style.backgroundPosition = "center";
+      piece.style.width = `${16 + Math.random() * 10}px`;
+      piece.style.height = `${16 + Math.random() * 10}px`;
+      piece.style.borderRadius = "0";
+      piece.style.animationDelay = `${Math.random() * 0.2}s`;
+      piece.style.animationDuration = `${2.6 + Math.random() * 1.6}s`;
       piece.style.setProperty("--drift", String(Math.random()));
       document.body.appendChild(piece);
 
