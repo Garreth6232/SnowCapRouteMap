@@ -33,6 +33,7 @@
   let legendContainer;
   let legendToggleBtn;
   let legendContent;
+  let edithButton;
 
   let map;
   let mapReady = false;
@@ -1090,6 +1091,11 @@
         }
       });
     }
+    if (edithButton) {
+      edithButton.addEventListener("click", () => {
+        window.alert("Hi Edith I Hope work is good! ❤️");
+      });
+    }
   }
 
   function initializeMap() {
@@ -1150,6 +1156,7 @@
     legendContainer = $("#legend-container");
     legendToggleBtn = $("#legend-toggle");
     legendContent = $("#route-legend");
+    edithButton = $("#edith-button");
 
     applyTheme(getStoredTheme(), false);
     buildRouteList();
