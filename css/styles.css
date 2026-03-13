@@ -606,6 +606,11 @@ button {
   box-shadow: none;
 }
 
+
+.distance-next-route {
+  width: 100%;
+}
+
 .distance-result {
   min-height: 1.25rem;
   font-size: 0.9rem;

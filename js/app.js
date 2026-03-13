@@ -35,6 +35,7 @@
   let distanceInput;
   let distanceResultEl;
   let distanceClearBtn;
+  let distanceNextRouteBtn;
   let cacheStatusEl;
   let legendContainer;
   let legendToggleBtn;
@@ -75,6 +76,10 @@
   let distanceLabel = null;
   let activeStopButton = null;
   let houseMarker = null;
+
+  let closestRouteMatches = [];
+  let activeClosestRouteIndex = -1;
+  let activeDistanceLocation = null;
   const springMarkers = [];
   const easterEggMarkers = [];
 
@@ -406,6 +411,41 @@
     }
   }
 
+  function resetClosestRouteMatches() {
+    closestRouteMatches = [];
+    activeClosestRouteIndex = -1;
+    activeDistanceLocation = null;
+    if (distanceNextRouteBtn) {
+      distanceNextRouteBtn.hidden = true;
+      distanceNextRouteBtn.disabled = true;
+    }
+  }
+
+  function updateNextClosestRouteButton() {
+    if (!distanceNextRouteBtn) return;
+    const hasAnother = activeClosestRouteIndex >= 0 && activeClosestRouteIndex < closestRouteMatches.length - 1;
+    distanceNextRouteBtn.hidden = closestRouteMatches.length <= 1;
+    distanceNextRouteBtn.disabled = !hasAnother;
+  }
+
+  function showClosestRouteMatch(index) {
+    if (!distanceResultEl || !activeDistanceLocation) return;
+    const match = closestRouteMatches[index];
+    if (!match) return;
+
+    activeClosestRouteIndex = index;
+    const rank = index + 1;
+    const rankLabels = ["Closest", "2nd closest", "3rd closest"];
+    const rankLabel = rankLabels[index] || `${rank}th closest`;
+
+    distanceResultEl.textContent = `${rankLabel} route: ${match.name} · ${match.distance.toFixed(2)} miles away.`;
+
+    drawDistanceConnector(activeDistanceLocation, match.nearestPoint, match.name, match.distance);
+    emphasizeRoute(match.routeId);
+    focusRoute(match.routeId);
+    updateNextClosestRouteButton();
+  }
+
   function resetDistanceOverlays() {
     if (distanceMarker) {
       distanceMarker.setMap(null);
@@ -429,6 +469,7 @@
       distanceInput.value = "";
     }
     resetDistanceOverlays();
+    resetClosestRouteMatches();
     storeDistancePlace(null);
   }
 
@@ -1120,6 +1161,7 @@
     if (!location) {
       if (!value) {
         distanceResultEl.textContent = "Enter an address to calculate distance.";
+        resetClosestRouteMatches();
         return;
       }
 
@@ -1127,6 +1169,7 @@
       if (!result) {
         distanceResultEl.textContent = `Unable to locate address (${status}).`;
         resetDistanceOverlays();
+        resetClosestRouteMatches();
         storeDistancePlace(null);
         return;
       }
@@ -1135,6 +1178,7 @@
       if (!resolved) {
         distanceResultEl.textContent = "Unable to resolve the selected location.";
         resetDistanceOverlays();
+        resetClosestRouteMatches();
         storeDistancePlace(null);
         return;
       }
@@ -1151,36 +1195,35 @@
     const point = typeof turf !== "undefined" ? turf.point([location.lng, location.lat]) : null;
     if (!point) {
       distanceResultEl.textContent = "Distance calculations unavailable.";
+      resetClosestRouteMatches();
       return;
     }
 
-    let bestRouteId = null;
-    let bestDistance = Infinity;
-    let nearestPoint = null;
+    const routeMatches = [];
 
     routeData.forEach((data, routeId) => {
       if (!data.turfLine) return;
       const nearest = turf.nearestPointOnLine(data.turfLine, point, { units: "miles" });
       if (!nearest || !Number.isFinite(nearest.properties.dist)) return;
-      if (nearest.properties.dist < bestDistance) {
-        bestDistance = nearest.properties.dist;
-        bestRouteId = routeId;
-        nearestPoint = { lat: nearest.geometry.coordinates[1], lng: nearest.geometry.coordinates[0] };
-      }
+      const route = ROUTES.find((item) => item.id === routeId);
+      routeMatches.push({
+        routeId,
+        name: route?.name || routeId,
+        distance: nearest.properties.dist,
+        nearestPoint: { lat: nearest.geometry.coordinates[1], lng: nearest.geometry.coordinates[0] }
+      });
     });
 
-    if (!bestRouteId || !Number.isFinite(bestDistance)) {
+    if (!routeMatches.length) {
       distanceResultEl.textContent = "No routes available for distance calculation.";
+      resetClosestRouteMatches();
       return;
     }
 
-    const closestRoute = ROUTES.find((route) => route.id === bestRouteId);
-    const closestName = closestRoute?.name || bestRouteId;
-    distanceResultEl.textContent = `Closest route: ${closestName} · ${bestDistance.toFixed(2)} miles away.`;
-
-    drawDistanceConnector(location, nearestPoint, closestName, bestDistance);
-    emphasizeRoute(bestRouteId);
-    focusRoute(bestRouteId);
+    routeMatches.sort((a, b) => a.distance - b.distance);
+    closestRouteMatches = routeMatches.slice(0, 3);
+    activeDistanceLocation = location;
+    showClosestRouteMatch(0);
   }
 
   function setupDistanceAutocomplete() {
@@ -1232,6 +1275,14 @@
         showAllRoutes();
       });
     }
+    if (distanceNextRouteBtn) {
+      distanceNextRouteBtn.addEventListener("click", () => {
+        if (activeClosestRouteIndex < 0) return;
+        const nextIndex = activeClosestRouteIndex + 1;
+        if (nextIndex >= closestRouteMatches.length) return;
+        showClosestRouteMatch(nextIndex);
+      });
+    }
     if (distanceInput) {
       distanceInput.addEventListener("input", () => {
         if (programmaticDistanceInputUpdate) {
@@ -1240,6 +1291,11 @@
         const currentValue = distanceInput.value.trim();
         if (!currentValue || currentValue !== lastDistancePlaceValue) {
           storeDistancePlace(null);
+          resetClosestRouteMatches();
+          resetDistanceOverlays();
+          if (distanceResultEl && !currentValue) {
+            distanceResultEl.textContent = "";
+          }
         }
       });
     }
@@ -1336,6 +1392,7 @@
     distanceInput = $("#distance-address");
     distanceResultEl = $("#distance-result");
     distanceClearBtn = $("#distance-clear");
+    distanceNextRouteBtn = $("#distance-next-route");
     cacheStatusEl = $("#cache-status");
     legendContainer = $("#legend-container");
     legendToggleBtn = $("#legend-toggle");
