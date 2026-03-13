@@ -1,201 +1,145 @@
 const ROUTES = [
   {
     id: "route-01",
-    name: "Route 1",
-    color: "#FF5555",
-    addresses: [
-      "16901 SE Division St, Portland 97236",
-      "9850 NE Everett St, Portland 97220",
-      "333 SE 127th Ave, Portland 97233",
-      "202 SE 188th Ave, Portland 97233",
-      "16810 SE Powell Blvd, Portland 97236"
-    ],
+    name: "Route 01",
+    color: "#e6194b",
     coordinates: [
-      [45.5034, -122.4873],
-      [45.5269, -122.5611],
-      [45.5098, -122.529],
-      [45.5145, -122.4576],
-      [45.4977, -122.4893]
+      [30.3089, -97.9426],
+      [30.2967, -97.9052],
+      [30.2824, -97.8706],
+      [30.2671, -97.8397]
     ]
   },
   {
     id: "route-02",
-    name: "Route 2",
-    color: "#33A1FD",
-    addresses: ["777 NE 8th Ave, Gresham 97030"],
-    coordinates: [[45.4996, -122.4314]]
+    name: "Route 02",
+    color: "#3cb44b",
+    coordinates: [
+      [30.3531, -97.7685],
+      [30.3394, -97.7413],
+      [30.3276, -97.7124],
+      [30.3129, -97.6845]
+    ]
   },
   {
     id: "route-03",
-    name: "Route 3",
-    color: "#FFD700",
-    addresses: [
-      "203 SE 162nd Ave, Portland 97233",
-      "4405 NE 133rd Ave, Portland 97230",
-      "1757 SE 174th Ave, Portland 97233"
-    ],
+    name: "Route 03",
+    color: "#ffe119",
     coordinates: [
-      [45.5071, -122.4997],
-      [45.553, -122.5265],
-      [45.5084, -122.482]
+      [30.2692, -97.7606],
+      [30.2548, -97.7274],
+      [30.2363, -97.6995],
+      [30.2215, -97.6715]
     ]
   },
   {
     id: "route-04",
-    name: "Route 4",
-    color: "#7CFC00",
-    addresses: ["4515 W Powell Blvd, Gresham 97030"],
-    coordinates: [[45.4894, -122.4439]]
+    name: "Route 04",
+    color: "#0082c8",
+    coordinates: [
+      [30.4176, -97.7398],
+      [30.3943, -97.7162],
+      [30.3741, -97.6907],
+      [30.3572, -97.6629]
+    ]
   },
   {
     id: "route-05",
-    name: "Route 5",
-    color: "#FF8C00",
-    addresses: [
-      "724 NE 195th Ave, Portland 97230",
-      "16920 SE Powell Blvd, Portland 97236",
-      "223 SE 182nd Ave, Portland 97233",
-      "15634 SE Division St, Portland 97236",
-      "16119 SE Division St, Portland 97236"
-    ],
+    name: "Route 05",
+    color: "#f58231",
     coordinates: [
-      [45.537, -122.474],
-      [45.495, -122.4863],
-      [45.5142, -122.4711],
-      [45.4984, -122.4989],
-      [45.4995, -122.493]
+      [30.2971, -97.7902],
+      [30.2806, -97.7647],
+      [30.2648, -97.7395],
+      [30.2486, -97.7139]
     ]
   },
   {
     id: "route-06",
-    name: "Route 6",
-    color: "#C71585",
-    addresses: [
-      "16977 NE Halsey St, Portland 97230",
-      "660 SE 212th Ave, Gresham 97030",
-      "333 NE 181st Ave, Gresham 97030",
-      "19625 NE Glisan St, Portland 97230"
-    ],
+    name: "Route 06",
+    color: "#911eb4",
     coordinates: [
-      [45.5338, -122.4765],
-      [45.5089, -122.4221],
-      [45.5271, -122.463],
-      [45.5278, -122.4508]
+      [30.3928, -97.8567],
+      [30.3743, -97.8251],
+      [30.3569, -97.7942],
+      [30.3412, -97.7608]
     ]
   },
   {
     id: "route-07",
-    name: "Route 7",
-    color: "#00CED1",
-    addresses: ["777 NE 8th Ave, Gresham 97030"],
-    coordinates: [[45.4996, -122.4314]]
+    name: "Route 07",
+    color: "#46f0f0",
+    coordinates: [
+      [30.2489, -97.8883],
+      [30.2296, -97.8548],
+      [30.2117, -97.8207],
+      [30.1951, -97.7856]
+    ]
   },
   {
     id: "route-08",
-    name: "Route 8",
-    color: "#FF1493",
-    addresses: [
-      "930 SE 212th Ave, Gresham 97030",
-      "17366 NE Halsey St, Portland 97230",
-      "15848 SE Division St, Portland 97236",
-      "18737 SE Stark St, Portland 97233"
-    ],
+    name: "Route 08",
+    color: "#f032e6",
     coordinates: [
-      [45.5014, -122.4205],
-      [45.5345, -122.4928],
-      [45.4988, -122.4992],
-      [45.5164, -122.4603]
+      [30.3314, -97.6282],
+      [30.3152, -97.6018],
+      [30.3004, -97.5742],
+      [30.2858, -97.5484]
     ]
   },
   {
     id: "route-09",
-    name: "Route 9",
-    color: "#9370DB",
-    addresses: [
-      "16745 SE Division St, Portland 97236",
-      "100 NE 188th Ave, Portland 97230",
-      "128 NE 182nd Ave, Portland 97230"
-    ],
+    name: "Route 09",
+    color: "#d2f53c",
     coordinates: [
-      [45.4979, -122.4923],
-      [45.524, -122.4698],
-      [45.5233, -122.4716]
+      [30.4473, -97.8335],
+      [30.4278, -97.8014],
+      [30.4094, -97.7705],
+      [30.3891, -97.7393]
     ]
   },
   {
     id: "route-10",
     name: "Route 10",
-    color: "#00FA9A",
-    addresses: [
-      "2711 W Powell Blvd, Gresham 97030",
-      "1999 NE Division St, Gresham 97030",
-      "1555 NE Division St, Gresham 97030",
-      "1838 E Powell Blvd, Gresham 97030",
-      "1505 W Powell Blvd, Gresham 97030"
-    ],
+    color: "#fabebe",
     coordinates: [
-      [45.4909, -122.4224],
-      [45.4998, -122.4142],
-      [45.4994, -122.4172],
-      [45.4979, -122.4164],
-      [45.4996, -122.4191]
+      [30.2129, -97.7074],
+      [30.1996, -97.6776],
+      [30.1854, -97.6455],
+      [30.1709, -97.6146]
     ]
   },
   {
     id: "route-11",
     name: "Route 11",
-    color: "#FF4500",
-    addresses: [
-      "765 Mt Hood Hwy, Gresham 97080",
-      "1212 NE Linden Ave, Gresham 97030",
-      "1951 NE Cleveland Ave, Gresham 97030",
-      "1500 NE Cleveland Ave, Gresham 97030",
-      "1001 NE Division St, Gresham 97030"
-    ],
+    color: "#008080",
     coordinates: [
-      [45.489, -122.4391],
-      [45.5059, -122.4387],
-      [45.5094, -122.4359],
-      [45.5048, -122.4352],
-      [45.5021, -122.4389]
+      [30.3786, -97.6912],
+      [30.3584, -97.6647],
+      [30.3398, -97.6375],
+      [30.3202, -97.6098]
     ]
   },
   {
     id: "route-12",
     name: "Route 12",
-    color: "#1E90FF",
-    addresses: [
-      "2629 SE 136th Ave, Portland 97236",
-      "4751 NE 99th Ave, Portland 97220",
-      "2144 SE 139th Ave, Portland 97233",
-      "2434 SE 139th Ave, Portland 97233",
-      "2602 SE 139th Ave, Portland 97233",
-      "2801 SE 139th Ave, Portland 97233"
-    ],
+    color: "#e6beff",
     coordinates: [
-      [45.4995, -122.5208],
-      [45.5535, -122.5564],
-      [45.5051, -122.5185],
-      [45.5065, -122.5192],
-      [45.5078, -122.52],
-      [45.5095, -122.5208]
+      [30.2682, -97.6461],
+      [30.2514, -97.6164],
+      [30.2349, -97.5863],
+      [30.2187, -97.5569]
     ]
   },
   {
     id: "route-13",
     name: "Route 13",
-    color: "#ADFF2F",
-    addresses: [
-      "937 NE Hood Ave, Gresham 97030",
-      "1280 NE Kane Dr, Gresham 97030",
-      "1420 NE Kane Dr, Gresham 97030",
-      "1830 NE Kane Dr, Gresham 97030"
-    ],
+    color: "#aa6e28",
     coordinates: [
-      [45.5019, -122.4315],
-      [45.506, -122.4284],
-      [45.5073, -122.4272],
-      [45.5095, -122.4243]
+      [30.4047, -97.9294],
+      [30.3862, -97.8936],
+      [30.3679, -97.8582],
+      [30.3488, -97.8231]
     ]
   }
 ];

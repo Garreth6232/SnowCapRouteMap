@@ -1,92 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SnowCap Route Mapper</title>
-    <link rel="stylesheet" href="./css/styles.css" />
-  </head>
-  <body>
-    <noscript>
-      <div class="noscript">This application requires JavaScript to run. Please enable JavaScript in your browser.</div>
-    </noscript>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SnowCap Route Mapper</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <noscript>
+    <div class="noscript">This application requires JavaScript to run. Please enable JavaScript in your browser.</div>
+  </noscript>
+  <div id="lock" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lock-title" aria-describedby="lock-subtitle">
+    <div class="lock-card">
+      <img src="./assets/logo-main.svg" alt="SnowCap Route Mapper logo" class="lock-card__logo" />
+      <h1 id="lock-title">SnowCap Route Mapper</h1>
+      <p id="lock-subtitle">Enter the access password to continue.</p>
+      <form id="lock-form" class="lock-form" novalidate>
+        <label for="lock-password">Password</label>
+        <input type="password" id="lock-password" name="password" autocomplete="current-password" required />
+        <button type="submit" class="btn">Continue</button>
+        <p class="lock-form__note">This lock is client side only.</p>
+        <p id="lock-error" class="lock-form__error" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
 
-    <div id="lock" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lock-title">
-      <div class="lock-card">
-        <img src="./assets/snowcapmain.png" alt="SnowCap logo" class="app-logo" />
-        <h1 id="lock-title" class="lock-title">Welcome to SnowCap Route Mapper</h1>
-        <p class="lock-subtitle">Tap below to open the map.</p>
-        <form id="lock-form" class="lock-form" novalidate>
-          <button type="submit" class="btn">Let's Go!</button>
-        </form>
+  <div id="app" class="app-shell" aria-hidden="true">
+    <aside id="sidebar" class="sidebar" aria-label="Route controls">
+      <header class="sidebar__header" aria-label="Organization logos">
+        <a href="#" class="logo-slot main-logo" aria-label="Primary organization link">
+          <img src="./assets/logo-main.svg" alt="Primary logo" />
+        </a>
+        <a href="#" class="logo-slot" aria-label="Secondary organization link placeholder">
+          <span>Logo</span>
+        </a>
+        <a href="#" class="logo-slot" aria-label="Tertiary organization link placeholder">
+          <span>Logo</span>
+        </a>
+      </header>
+      <div class="sidebar__controls" id="sidebar-controls">
+        <button type="button" class="btn" id="show-all">Show all routes</button>
+        <button type="button" class="btn btn-secondary" id="clear-address">Clear address</button>
+        <button type="button" class="btn btn-tertiary" id="theme-toggle" aria-pressed="false">Toggle theme</button>
       </div>
-    </div>
+      <section class="sidebar__routes" aria-labelledby="routes-heading">
+        <h2 class="section-title" id="routes-heading">Routes</h2>
+        <ul id="route-list" class="route-list" aria-live="polite"></ul>
+      </section>
+      <section class="sidebar__results" id="results-panel" aria-live="polite" aria-atomic="true">
+        <h2 class="section-title">Closest route</h2>
+        <p class="result-text">Search for an address to see the nearest route.</p>
+      </section>
+      <footer class="sidebar__partners" aria-label="Partner logos">
+        <img src="./assets/logo-partner-1.svg" alt="Partner 1 logo" />
+        <img src="./assets/logo-partner-2.svg" alt="Partner 2 logo" />
+      </footer>
+      <form id="address-form" class="sidebar__form" autocomplete="off">
+        <label for="address-input">Find the closest route</label>
+        <div class="form-row">
+          <input type="text" id="address-input" name="address" placeholder="Enter an address" required />
+          <button type="submit" class="btn">Find</button>
+        </div>
+      </form>
+    </aside>
+    <main id="map" class="map" role="application" aria-label="Route map"></main>
+  </div>
 
-    <div id="app" class="app-shell" aria-hidden="true">
-      <aside class="sidebar" aria-label="Route controls">
-        <div class="sidebar__top">
-          <img src="./assets/snowcapmain.png" alt="SnowCap logo" class="app-logo" />
-          <button id="theme-toggle" class="icon-btn" type="button" aria-pressed="true" aria-label="Switch to light mode">
-            🌙
-          </button>
-        </div>
-        <div class="sidebar__summary" id="route-summary" aria-live="polite"></div>
-        <div class="sidebar__controls">
-          <button id="show-all" type="button" class="btn">Show All Routes</button>
-        </div>
-        <ul id="route-list" class="route-list" aria-label="Available routes"></ul>
-        <section id="check-distance" class="sidebar__distance" aria-labelledby="check-distance-title">
-          <h2 id="check-distance-title">Check Distance to Route</h2>
-          <form id="distance-form" class="distance-form" novalidate>
-            <label class="distance-label" for="distance-address">Address</label>
-            <input
-              type="text"
-              id="distance-address"
-              name="distance-address"
-              placeholder="Enter an address"
-              autocomplete="street-address"
-              required
-            />
-            <div class="distance-actions">
-              <button type="submit" class="btn distance-check">Check Distance</button>
-              <button type="button" id="distance-clear" class="btn btn--ghost">Clear</button>
-            </div>
-          </form>
-          <p id="distance-result" class="distance-result" role="status" aria-live="polite"></p>
-        </section>
-        <div id="cache-status" aria-live="polite">Cached Routes: 0/13</div>
-      </aside>
-      <main class="map-wrapper" role="application" aria-label="Route map">
-        <div id="map" class="map" aria-live="polite"></div>
-        <div id="map-loader" class="map-loader" role="status" aria-live="polite" aria-hidden="true">
-          <div class="spinner" aria-hidden="true"></div>
-          <p class="loader-text">Loading map…</p>
-        </div>
-        <div id="legend-container" class="legend" aria-live="polite">
-          <button
-            id="legend-toggle"
-            type="button"
-            class="legend__toggle"
-            aria-expanded="true"
-            aria-controls="route-legend"
-          >
-            Hide Legend
-          </button>
-          <div id="route-legend" class="legend__content" role="list"></div>
-        </div>
-        <button id="edith-button" type="button" class="edith-button">For Edith Only</button>
-      </main>
-    </div>
-
-    <script src="./js/config.js" defer></script>
-    <script src="./js/auth.js" defer></script>
-    <script src="./js/routes.js" defer></script>
-    <script src="./js/app.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js" defer></script>
-    <script
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBn9OGAgLMcnwt63LE2truyOuFQw6_dC0Q&libraries=places&callback=initMap"
-      async
-      defer
-    ></script>
-  </body>
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=geometry,places" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js" defer></script>
+  <script src="./js/config.js" defer></script>
+  <script src="./js/auth.js" defer></script>
+  <script src="./js/routes.js" defer></script>
+  <script src="./js/utils.js" defer></script>
+  <script src="./js/app.js" defer></script>
+</body>
 </html>

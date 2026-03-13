@@ -1,86 +1,86 @@
 (function () {
   const LOCK_ID = "lock";
   const APP_ID = "app";
-  const FORM_ID = "lock-form";
-  const UNLOCK_KEY = "scrm-unlocked";
-  const TRANSITION_DELAY = 320;
 
-  function elements() {
+  function getElements() {
     return {
       lock: document.getElementById(LOCK_ID),
       app: document.getElementById(APP_ID),
-      form: document.getElementById(FORM_ID)
+      form: document.getElementById("lock-form"),
+      passwordInput: document.getElementById("lock-password"),
+      error: document.getElementById("lock-error"),
     };
   }
 
-  function toggleAppVisibility(lock, app, unlocked) {
+  function revealApp(elements, shouldDispatch = true) {
+    const { lock, app } = elements;
     if (!lock || !app) return;
 
-    if (unlocked) {
-      lock.classList.add("is-hidden");
-      app.classList.add("is-active");
-      app.setAttribute("aria-hidden", "false");
-    } else {
-      lock.classList.remove("is-hidden");
-      app.classList.remove("is-active");
-      app.setAttribute("aria-hidden", "true");
+    lock.classList.add("is-hidden");
+    app.classList.add("is-active");
+    app.setAttribute("aria-hidden", "false");
+
+    if (shouldDispatch) {
+      document.dispatchEvent(new CustomEvent("app:unlock"));
     }
   }
 
-  function launchConfetti() {
-    const lock = document.getElementById(LOCK_ID);
-    if (!lock) return;
+  function handleSubmit(event, elements) {
+    event.preventDefault();
+    const { passwordInput, error } = elements;
+    if (!passwordInput) return;
 
-    const colors = ["#ffd6e7", "#f9e79f", "#c7f9cc", "#cfe8ff", "#e9d5ff"];
-    const count = 90;
-
-    for (let i = 0; i < count; i += 1) {
-      const piece = document.createElement("span");
-      piece.className = "confetti-piece";
-      piece.style.left = `${Math.random() * 100}%`;
-      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
-      piece.style.animationDelay = `${Math.random() * 0.2}s`;
-      piece.style.animationDuration = `${1.8 + Math.random() * 1.4}s`;
-      piece.style.setProperty("--drift", String(Math.random()));
-      lock.appendChild(piece);
-
-      window.setTimeout(() => {
-        piece.remove();
-      }, 3400);
-    }
-  }
-
-  function handleUnlock(elementsMap) {
-    const { lock, app } = elementsMap;
-    launchConfetti();
-    window.setTimeout(() => {
-      toggleAppVisibility(lock, app, true);
-      document.dispatchEvent(new CustomEvent("auth:granted"));
-    }, TRANSITION_DELAY);
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    const els = elements();
-    const { form, lock, app } = els;
-
-    if (!form || !lock || !app) {
-      console.warn("Lock screen elements missing. Initialization skipped.");
+    const value = passwordInput.value.trim();
+    if (!value) {
+      if (error) error.textContent = "Password is required.";
+      passwordInput.focus();
       return;
     }
 
-    const previouslyUnlocked = sessionStorage.getItem(UNLOCK_KEY) === "1";
-
-    if (previouslyUnlocked) {
-      toggleAppVisibility(lock, app, true);
-      document.dispatchEvent(new CustomEvent("auth:granted", { detail: { restored: true } }));
-    } else {
-      toggleAppVisibility(lock, app, false);
+    if (typeof PUBLIC_PASSWORD !== "string") {
+      if (error) error.textContent = "Password is not configured.";
+      return;
     }
 
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      sessionStorage.setItem(UNLOCK_KEY, "1");
-      handleUnlock(els);
+    if (value !== PUBLIC_PASSWORD) {
+      if (error) error.textContent = "Incorrect password. Try again.";
+      passwordInput.select();
+      return;
+    }
+
+    sessionStorage.setItem("unlocked", "1");
+    if (error) error.textContent = "";
+    revealApp(elements);
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const elements = getElements();
+    const { lock, app, form, passwordInput, error } = elements;
+
+    if (!lock || !app || !form || !passwordInput) {
+      console.warn("Lock screen elements are missing.");
+      return;
+    }
+
+    const alreadyUnlocked = sessionStorage.getItem("unlocked") === "1";
+
+    if (alreadyUnlocked) {
+      revealApp(elements);
+      return;
+    }
+
+    app.classList.remove("is-active");
+    app.setAttribute("aria-hidden", "true");
+    lock.classList.remove("is-hidden");
+
+    form.addEventListener("submit", (event) => handleSubmit(event, elements));
+
+    passwordInput.addEventListener("input", () => {
+      if (error) error.textContent = "";
     });
+
+    setTimeout(() => {
+      passwordInput.focus();
+    }, 200);
   });
 })();
