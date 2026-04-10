@@ -277,94 +277,31 @@ button {
   overflow: hidden;
 }
 
-.spring-message {
+.season-message {
   position: absolute;
   top: 6vh;
   left: 50%;
   transform: translateX(-50%);
-  max-width: min(860px, 92vw);
+  max-width: min(640px, 92vw);
   margin: 0;
   text-align: center;
   font-weight: 700;
-  font-size: 1.1em;
+  font-size: 1.25em;
+  text-transform: uppercase;
   letter-spacing: 0.01em;
-  color: #ffd9f2;
+  color: #ffe8a3;
   text-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
-  animation: spring-pulse 2.8s ease-in-out infinite;
+  animation: season-pulse 2.8s ease-in-out infinite;
 }
 
-@keyframes spring-pulse {
+@keyframes season-pulse {
   0%,
   100% {
     transform: translateX(-50%) scale(1);
   }
   50% {
-    transform: translateX(-50%) scale(1.2);
+    transform: translateX(-50%) scale(1.08);
   }
-}
-
-.lock-bunny-row {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0.9rem;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  align-items: end;
-  justify-items: center;
-  padding: 0 clamp(0.7rem, 3.2vw, 2.25rem);
-  z-index: 6;
-  pointer-events: none;
-}
-
-.lock-bunny {
-  width: clamp(56px, 8vw, 104px);
-  animation: bunny-hop 1.4s cubic-bezier(0.34, 0.04, 0.18, 0.98) infinite;
-  transform-origin: center bottom;
-  will-change: transform;
-}
-
-.lock-bunny:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.lock-bunny:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-@keyframes bunny-hop {
-  0% {
-    transform: translateX(40px) translateY(0) scaleX(-1);
-  }
-  22% {
-    transform: translateX(20px) translateY(-34px) scaleX(-1);
-  }
-  50% {
-    transform: translateX(0) translateY(0) scaleX(-1);
-  }
-  74% {
-    transform: translateX(-20px) translateY(-38px) scaleX(-1);
-  }
-  100% {
-    transform: translateX(-40px) translateY(0) scaleX(-1);
-  }
-}
-
-.spring-map-deco {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.45));
-  user-select: none;
-}
-
-.easter-egg-marker {
-  width: 34px;
-  height: 34px;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
-  user-select: none;
-  cursor: pointer;
 }
 
 

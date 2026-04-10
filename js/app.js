@@ -6,11 +6,6 @@
   const LIGHT = "light";
   const HIGHLIGHT_DURATION = 2600;
   const HOUSE_ADDRESS = "17805 SE Stark St.\nPortland, OR 97233";
-  const SPRING_DECORATION_ASSETS = ["tulip1", "tulip2", "flower1", "poppy1", "lily1"];
-  const SPRING_DECORATION_COUNT = 34;
-  const EASTER_EGG_COUNT = 1;
-  const DECORATION_ROUTE_BUFFER_MILES = 0.25;
-  const EASTER_EGG_MESSAGE = "You found an easter egg! I couldn't figure out a reward so I will wish you a happy day";
 
   const mapStyles = {
     dark: [
@@ -81,8 +76,6 @@
   let closestRouteMatches = [];
   let activeClosestRouteIndex = -1;
   let activeDistanceLocation = null;
-  const springMarkers = [];
-  const easterEggMarkers = [];
 
   function $(selector) {
     return document.querySelector(selector);
@@ -795,111 +788,6 @@
     return marker;
   }
 
-  function randomInRange(min, max) {
-    return min + Math.random() * (max - min);
-  }
-
-  function getBoundsPoint(bounds) {
-    const northEast = bounds.getNorthEast();
-    const southWest = bounds.getSouthWest();
-    const lat = randomInRange(southWest.lat(), northEast.lat());
-    const lng = randomInRange(southWest.lng(), northEast.lng());
-    return { lat, lng };
-  }
-  function isPointNearRouteLine(position, routeLines, minDistanceMiles) {
-    if (!position || !Array.isArray(routeLines) || !routeLines.length || typeof turf === "undefined") {
-      return false;
-    }
-    if (typeof turf.point !== "function" || typeof turf.pointToLineDistance !== "function") {
-      return false;
-    }
-
-    const point = turf.point([position.lng, position.lat]);
-    return routeLines.some((line) => {
-      if (!line) return false;
-      const distance = turf.pointToLineDistance(point, line, { units: "miles" });
-      return Number.isFinite(distance) && distance < minDistanceMiles;
-    });
-  }
-
-  function getValidDecorationPoint(bounds, routeLines, minDistanceMiles) {
-    const maxAttempts = 80;
-    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      const candidate = getBoundsPoint(bounds);
-      if (!isPointNearRouteLine(candidate, routeLines, minDistanceMiles)) {
-        return candidate;
-      }
-    }
-    return getBoundsPoint(bounds);
-  }
-
-  function buildAlternatingDecorationList(totalCount) {
-    const icons = [];
-    let previous = null;
-    for (let i = 0; i < totalCount; i += 1) {
-      const candidates = SPRING_DECORATION_ASSETS.filter((name) => name !== previous);
-      const next = candidates[Math.floor(Math.random() * candidates.length)] || SPRING_DECORATION_ASSETS[0];
-      icons.push(next);
-      previous = next;
-    }
-    return icons;
-  }
-
-  function clearSeasonalMarkers(markers) {
-    markers.forEach((marker) => marker.setMap(null));
-    markers.length = 0;
-  }
-
-  function addSpringDecorations() {
-    if (!map || !overallBounds) return;
-    clearSeasonalMarkers(springMarkers);
-
-    const routeLines = Array.from(routeData.values())
-      .map((entry) => entry.turfLine)
-      .filter(Boolean);
-    const iconList = buildAlternatingDecorationList(SPRING_DECORATION_COUNT);
-
-    iconList.forEach((iconName) => {
-      const marker = new google.maps.Marker({
-        position: getValidDecorationPoint(overallBounds, routeLines, DECORATION_ROUTE_BUFFER_MILES),
-        map,
-        icon: {
-          url: `./assets/${iconName}.png`,
-          scaledSize: new google.maps.Size(34, 34)
-        },
-        clickable: false,
-        optimized: true,
-        zIndex: 40
-      });
-      springMarkers.push(marker);
-    });
-  }
-
-  function addEasterEggMarkers() {
-    if (!map || !overallBounds) return;
-    clearSeasonalMarkers(easterEggMarkers);
-
-    const routeLines = Array.from(routeData.values())
-      .map((entry) => entry.turfLine)
-      .filter(Boolean);
-
-    for (let i = 0; i < EASTER_EGG_COUNT; i += 1) {
-      const marker = new google.maps.Marker({
-        position: getValidDecorationPoint(overallBounds, routeLines, DECORATION_ROUTE_BUFFER_MILES),
-        map,
-        icon: {
-          url: "./assets/easteregg1.png",
-          scaledSize: new google.maps.Size(36, 36)
-        },
-        title: "Easter egg",
-        zIndex: 80
-      });
-      marker.addListener("click", () => {
-        window.alert(EASTER_EGG_MESSAGE);
-      });
-      easterEggMarkers.push(marker);
-    }
-  }
 
   async function geocodeAddress(address) {
     if (!geocoder) {
@@ -1150,8 +1038,6 @@
       await renderRoute(route);
     }
 
-    addSpringDecorations();
-    addEasterEggMarkers();
 
     console.log("✅ Dynamic routing restored with legend, highlight, label, and smooth zoom features active");
 
@@ -1342,13 +1228,10 @@
       piece.style.position = "fixed";
       piece.style.left = `${rect.left + rect.width / 2 + (Math.random() * 220 - 110)}px`;
       piece.style.top = `${Math.max(rect.top - 20, 0)}px`;
-      piece.style.background = "transparent";
-      piece.style.backgroundImage = "url('./assets/easteregg1.png')";
-      piece.style.backgroundSize = "cover";
-      piece.style.backgroundPosition = "center";
+      piece.style.background = `hsl(${Math.floor(Math.random() * 60) + 20} 95% 60%)`;
       piece.style.width = `${16 + Math.random() * 10}px`;
       piece.style.height = `${16 + Math.random() * 10}px`;
-      piece.style.borderRadius = "0";
+      piece.style.borderRadius = "999px";
       piece.style.animationDelay = `${Math.random() * 0.2}s`;
       piece.style.animationDuration = `${2.6 + Math.random() * 1.6}s`;
       piece.style.setProperty("--drift", String(Math.random()));
